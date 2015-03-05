@@ -3,7 +3,6 @@ import java.net.InetSocketAddress
 import actors.Server
 import akka.actor.ActorSystem
 
-import scala.io.StdIn
 
 /**
  * Created by anders on 04/03/15.
