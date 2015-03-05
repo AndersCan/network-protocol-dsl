@@ -1,10 +1,9 @@
 package protocol
 
-import scala.collection.mutable.ArrayBuffer
-
 /**
  * Created by anders on 04/03/15.
  */
+case class Validator(f: String => Either[String, Boolean])
 
 object Creator extends App {
 
@@ -18,49 +17,22 @@ object Creator extends App {
     5
   }
 
-
   val c = new Socket()
   val s = new Socket()
 
+  val isString = new Validator(x => Right(true))
+
+  val isInt = new Validator(x => try {
+    Integer.parseInt(x)
+    Right(true)
+  } catch {
+    case e: Exception => Left("msg breaks protocol. not int")
+  })
+
   // todo Create function instead of String compares
-  c send(s, "String")
-  s send(c, "String")
+  c send(s, isInt)
+  s send(c, isInt)
 
   println(c.states)
   println(s.states)
-
-
-}
-
-class Socket {
-  def send(socket: Socket, clazz: String) = {
-    // add await to s
-    socket.await(socket, clazz)
-    this addState("!", clazz)
-  }
-
-  def await(socket: Socket, clazz: String) = {
-    socket addState("?", clazz)
-  }
-
-  val states: scala.collection.mutable.ArrayBuffer[String] = ArrayBuffer()
-
-  def addState(kind: String, clazz: String) = {
-    states.append(kind + clazz)
-    //    states ++ kind ++ clazz
-  }
-
-  def compile = {
-    //    states.toList
-    new Protocol(states)
-  }
-
-}
-
-class Protocol(states: ArrayBuffer[String]) {
-  def consume(actual: String) = {
-    val expected = states.head
-    states.take(1)
-    expected == actual.getClass.getSimpleName
-  }
 }

@@ -4,7 +4,7 @@ import java.net.InetSocketAddress
 
 import akka.actor.{ActorRef, Props, Actor}
 import akka.io.{IO, Tcp}
-import protocol.Creator
+import protocol.{Validator, Socket, Creator}
 
 /**
  * Created by anders on 04/03/15.
@@ -22,8 +22,22 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
   //  IO(Tcp) ! Bind(self, new InetSocketAddress("localhost", 0))
   IO(Tcp) ! Bind(self, inetSocketAddress)
 
-  val proto = Creator.c.compile
-  println(proto)
+  val isInt = new Validator(x => try {
+    // Remove \n from end of line
+    x.dropRight(2).toInt
+    Right(true)
+  } catch {
+    case e: Exception =>
+      Left("msg breaks protocol. not int")
+  })
+
+  val c = new Socket
+  val s = new Socket
+
+  c send(s, isInt)
+  s send(c, isInt)
+
+  val proto = c.compile
 
   def receive = {
     case b@Bound(localAddress) =>

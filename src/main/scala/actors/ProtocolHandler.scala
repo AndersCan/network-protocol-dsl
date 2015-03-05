@@ -1,10 +1,6 @@
 package actors
 
-import java.net.InetSocketAddress
-
-import akka.actor.{Props, Actor}
-import akka.io.Tcp
-import akka.io.Tcp.{PeerClosed, Write, Received}
+import akka.actor.{PoisonPill, Actor, Props}
 import protocol.Protocol
 
 /**
@@ -12,22 +8,26 @@ import protocol.Protocol
  */
 
 object ProtocolHandler {
-  def props(protocol: Protocol) = Props(classOf[Server], protocol)
+  def props(protocol: Protocol) = Props(classOf[ProtocolHandler], protocol)
 }
 
 class ProtocolHandler(protocol: Protocol) extends Actor {
 
-  import Tcp._
+  import akka.io.Tcp._
 
   def receive = {
     case Received(data) => {
       // ensure protocol is followed
       // data is of type expected
-      if (protocol.consume(data.utf8String)) {
+      val msg = protocol.validateMessage(data.utf8String)
+//      val msg = protocol.validateMessage(data.mkString)
+
+      if (msg.isRight) {
         sender() ! Write(data)
       } else {
-        // break
-        println("bad value - protocol not followed")
+        println(msg.left)
+        // Close connection
+        self ! PoisonPill
       }
     }
     case PeerClosed => context stop self
