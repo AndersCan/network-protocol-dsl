@@ -2,9 +2,9 @@ package actors
 
 import java.net.InetSocketAddress
 
-import akka.actor.{ActorRef, Props, Actor}
+import akka.actor.{Actor, Props}
 import akka.io.{IO, Tcp}
-import protocol.{Validator, Socket, Creator}
+import protocol.{Socket, Validator}
 
 /**
  * Created by anders on 04/03/15.
@@ -16,7 +16,7 @@ object Server {
 
 class Server(inetSocketAddress: InetSocketAddress) extends Actor {
 
-  import Tcp._
+  import akka.io.Tcp._
   import context.system
 
   //  IO(Tcp) ! Bind(self, new InetSocketAddress("localhost", 0))
@@ -31,11 +31,16 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
       Left("msg breaks protocol. not int")
   })
 
+
   val c = new Socket()
   val s = new Socket()
 
   c send(s, isInt)
-  s send(c, isInt)
+  c send(s, isInt)
+  s send(c, new Validator(_ => Right(true))) // String
+  c gotoStep 0
+
+
 
   val proto = c.compile
 
@@ -48,10 +53,10 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
 
     case c@Connected(remote, local) =>
       val child = context.actorOf(SimplisticHandler.props())
-      val handler = context.actorOf(ProtocolHandler.props(proto, child))
-      //      val handler = context.actorOf(Props[SimplisticHandler])
       // Sender() is sender of the current message
       val connection = sender()
+      val handler = context.actorOf(ProtocolHandler.props(proto, connection, child))
+      //      val handler = context.actorOf(Props[SimplisticHandler])
       connection ! Register(handler)
   }
 
