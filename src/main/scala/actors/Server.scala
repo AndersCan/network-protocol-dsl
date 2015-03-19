@@ -31,8 +31,8 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
       Left("msg breaks protocol. not int")
   })
 
-  val c = new Socket
-  val s = new Socket
+  val c = new Socket()
+  val s = new Socket()
 
   c send(s, isInt)
   s send(c, isInt)
@@ -47,7 +47,8 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
     case CommandFailed(_: Bind) => context stop self
 
     case c@Connected(remote, local) =>
-      val handler = context.actorOf(ProtocolHandler.props(proto))
+      val child = context.actorOf(SimplisticHandler.props())
+      val handler = context.actorOf(ProtocolHandler.props(proto, child))
       //      val handler = context.actorOf(Props[SimplisticHandler])
       // Sender() is sender of the current message
       val connection = sender()

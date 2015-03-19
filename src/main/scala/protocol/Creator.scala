@@ -5,7 +5,7 @@ package protocol
  */
 case class Validator(f: String => Either[String, Boolean])
 
-object Creator extends App {
+object Creator {
 
   val p = Creator.generateProtocol((x: Int) => {
     "x"

@@ -7,21 +7,22 @@ import scala.collection.mutable.ArrayBuffer
  */
 class Socket {
 
-  def send(socket: Socket, input: Validator) = {
-    // add await to s
-    socket.await(socket, input)
-    this addState input
-  }
-
-  def await(socket: Socket, clazz: Validator) = {
-    socket addState clazz
-  }
-
   val states: scala.collection.mutable.ArrayBuffer[Validator] = ArrayBuffer()
 
+  def send(socket: Socket, v: Validator) = {
+    this addState v
+    // add await to receiver, socket
+    socket.await(socket, v)
+  }
+
+  def await(socket: Socket, v: Validator) = {
+    socket addState v
+  }
+
+
   // todo - send or receive
-  def addState(clazz: Validator) = {
-    states.append(clazz)
+  def addState(v: Validator) = {
+    states.append(v)
   }
 
   def compile = {
