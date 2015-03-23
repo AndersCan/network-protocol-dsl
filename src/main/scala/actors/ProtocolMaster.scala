@@ -8,13 +8,13 @@ import protocol.Protocol
  * Created by anders on 04/03/15.
  */
 
-object ProtocolHandler {
-  def props(protocol: Protocol, connection: ActorRef, child: ActorRef) = Props(classOf[ProtocolHandler], protocol, connection, child)
+object ProtocolMaster {
+  def props(protocol: Protocol, connection: ActorRef, child: ActorRef) = Props(classOf[ProtocolMaster], protocol, connection, child)
 }
 
-case class ChildMessage(data: ByteString)
+case class ToChildMessage(data: ByteString)
 
-case class ParentMessage(data: ByteString)
+case class ToProtocolMaster(data: ByteString)
 
 // use to forget last received message and get new message
 case class ForgetLast()
@@ -24,8 +24,13 @@ case class ForgetLastWithMessage(data: ByteString)
 
 
 //case class ChildState(msg: ByteString)
-
-class ProtocolHandler(protocol: Protocol, connection: ActorRef, child: ActorRef) extends Actor {
+/**
+ * ProtocolMaster Handles the incoming messages sent from a user and checks whether it obeys the defined protocol
+ * @param protocol protocol that is to be followed
+ * @param connection TCP Actor connection
+ * @param child Actor that uses the received messages
+ */
+class ProtocolMaster(protocol: Protocol, connection: ActorRef, child: ActorRef) extends Actor {
 
 
   import akka.io.Tcp._
@@ -33,29 +38,29 @@ class ProtocolHandler(protocol: Protocol, connection: ActorRef, child: ActorRef)
 
   def receive = {
 
-    case ParentMessage(data) =>
+    case ToProtocolMaster(data) =>
       println("PARENT: Got Message")
-      println(data.utf8String)
+      //println(data.utf8String)
       //      sender() ! Write(data)
       val msg = protocol.validateSendMessage(data.utf8String)
       if (msg.isRight) {
         connection ! Write(data)
       } else {
-        println(msg.left)
+        //println(msg.left)
         // Close connection
         self ! PoisonPill
       }
+
     case Received(data) => {
-      // ensure protocol is followed
-      // data is of type expected
       val msg = protocol.validateReceivedMessage(data.utf8String)
-      //      val msg = protocol.validateMessage(data.mkString)
       if (msg.isRight) {
         //        sender() ! Write(data)
-        child ! ChildMessage(data)
+        child ! ToChildMessage(data)
       } else {
-        println(msg.left)
+        //println(msg.left)
         // Close connection
+        // todo send error to client?
+        // todo send poison pill to child?
         self ! PoisonPill
       }
     }

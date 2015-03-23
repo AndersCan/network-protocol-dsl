@@ -18,18 +18,18 @@ case class Receive(v: Validator) extends MessageType()
 
 case class LoopToStep(i: Integer, v: Validator = new Validator(_ => Left("validate run on Loop step"))) extends MessageType()
 
-class Socket {
+class ProtocolBuilder {
 
   val states: scala.collection.mutable.ArrayBuffer[MessageType] = ArrayBuffer()
 
-  def send(socket: Socket, v: Validator) = {
-    this addState Receive(v)
+  def send(socket: ProtocolBuilder, v: Validator) = {
+    this addState Send(v)
     // add await to receiver, socket
-    socket.await(socket, v)
+    socket.receive(socket, v)
   }
 
-  def await(socket: Socket, v: Validator) = {
-    socket addState Send(v)
+  def receive(socket: ProtocolBuilder, v: Validator) = {
+    socket addState Receive(v)
   }
 
   // todo - send or receive
@@ -37,6 +37,7 @@ class Socket {
     states.append(m)
   }
 
+  // Have to add 1 because StateIndex is incremented AFTER
   def gotoStep(i: Int): Unit = {
     states.append(LoopToStep(i))
   }
@@ -51,41 +52,43 @@ class Protocol(states: ArrayBuffer[MessageType]) {
   // Index of where in 'states' list we are
   var stateIndex = 0
 
-  // todo - Duplication of code in methods and 'var' usage
+  // todo Combine send & receive methods?
   def validateSendMessage(input: String) = {
-    var msgType = states(stateIndex)
-    stateIndex += 1
-    msgType match {
-      case loop: LoopToStep =>
-        stateIndex = loop.i
-        msgType = states(stateIndex)
-      case _ =>
-    }
+    val msgType: MessageType = getMessageType
+
     msgType match {
       case Receive(v) =>
         // Protocol is in receive state, not send
-        println("err. not in receive")
-      case _ => println("OK!")
+        Left("protocol violated - sending when should be receiving")
+      case _ => msgType.v.f(input)
     }
-    msgType.v.f(input)
+
   }
 
   def validateReceivedMessage(input: String) = {
-    var msgType = states(stateIndex)
-    stateIndex += 1
-    msgType match {
-      case loop: LoopToStep =>
-        stateIndex = loop.i
-        msgType = states(stateIndex)
-      case _ =>
-    }
+    val msgType: MessageType = getMessageType
+
     msgType match {
       case Send(v) =>
+        // todo kill connection
         // Protocol is in send state, not receive
-        println("err. not in send")
-      case _ => println("OK!")
+        Left("protocol violated - receiving when should be sending")
+      case _ => msgType.v.f(input)
     }
-    msgType.v.f(input)
+
   }
 
+  private def getMessageType: MessageType = {
+    states(stateIndex) match {
+      case loop: LoopToStep =>
+        stateIndex = loop.i
+        getMessageType
+      case msg: MessageType =>
+        //        val msgType = msg
+        stateIndex += 1
+        msg
+      case _ =>
+        sys.error("unknown message type")
+    }
+  }
 }

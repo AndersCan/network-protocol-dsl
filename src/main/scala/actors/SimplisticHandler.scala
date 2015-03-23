@@ -14,7 +14,6 @@ object SimplisticHandler {
   def props() = Props(classOf[SimplisticHandler])
 }
 
-case class InternalMessage(x: Int, y: Int)
 
 class SimplisticHandler extends Actor {
 
@@ -25,7 +24,7 @@ class SimplisticHandler extends Actor {
 
   def receive = {
 
-    case ChildMessage(data) =>
+    case ToChildMessage(data) =>
       println("RECEIVED")
       println(data.utf8String)
 
@@ -36,14 +35,8 @@ class SimplisticHandler extends Actor {
         //        self ! InternalMessage(firstNum, data.utf8String.dropRight(2).toInt)
         val y = data.utf8String.dropRight(2).toInt
         isSet = !isSet
-        sender() ! ParentMessage(ByteString.fromString(s"${firstNum * y}\r\n"))
+        sender() ! ToProtocolMaster(ByteString.fromString(s"${firstNum * y}\r\n"))
         //        var x = ByteString.fromString("")
       }
-
-    case InternalMessage(x, y) =>
-      println("Sending to parent...")
-      sender() ! ParentMessage(ByteString(x * y))
-    //    case Received(data) => sender() ! Write(data)
-    //    case PeerClosed => context stop self
   }
 }

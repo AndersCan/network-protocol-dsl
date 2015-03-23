@@ -4,7 +4,7 @@ import java.net.InetSocketAddress
 
 import akka.actor.{Actor, Props}
 import akka.io.{IO, Tcp}
-import protocol.{Socket, Validator}
+import protocol.{ProtocolBuilder, Validator}
 
 /**
  * Created by anders on 04/03/15.
@@ -32,8 +32,9 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
   })
 
 
-  val c = new Socket()
-  val s = new Socket()
+// TODO - How to add multiple communication channels? {S :: C :: C}
+  val c = new ProtocolBuilder()
+  val s = new ProtocolBuilder()
 
   c send(s, isInt)
   c send(s, isInt)
@@ -42,7 +43,8 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
 
 
 
-  val proto = c.compile
+//  val proto = c.compile
+  val proto = s.compile
 
   def receive = {
     case b@Bound(localAddress) =>
@@ -55,7 +57,7 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
       val child = context.actorOf(SimplisticHandler.props())
       // Sender() is sender of the current message
       val connection = sender()
-      val handler = context.actorOf(ProtocolHandler.props(proto, connection, child))
+      val handler = context.actorOf(ProtocolMaster.props(proto, connection, child))
       //      val handler = context.actorOf(Props[SimplisticHandler])
       connection ! Register(handler)
   }
