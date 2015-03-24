@@ -32,7 +32,6 @@ class ProtocolBuilder {
     socket addState Receive(v)
   }
 
-  // todo - send or receive
   def addState(m: MessageType) = {
     states.append(m)
   }

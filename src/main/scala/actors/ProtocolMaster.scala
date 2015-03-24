@@ -46,7 +46,7 @@ class ProtocolMaster(protocol: Protocol, connection: ActorRef, child: ActorRef) 
       if (msg.isRight) {
         connection ! Write(data)
       } else {
-        //println(msg.left)
+        println(msg.left)
         // Close connection
         self ! PoisonPill
       }
@@ -57,7 +57,7 @@ class ProtocolMaster(protocol: Protocol, connection: ActorRef, child: ActorRef) 
         //        sender() ! Write(data)
         child ! ToChildMessage(data)
       } else {
-        //println(msg.left)
+        println(msg.left)
         // Close connection
         // todo send error to client?
         // todo send poison pill to child?
@@ -65,6 +65,6 @@ class ProtocolMaster(protocol: Protocol, connection: ActorRef, child: ActorRef) 
       }
     }
     case PeerClosed => context stop self
-    case _ => println("Unknown message...")
+    case _ => println("Unknown message sent to ProtocolMaster")
   }
 }

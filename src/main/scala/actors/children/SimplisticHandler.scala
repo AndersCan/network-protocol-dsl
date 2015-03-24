@@ -1,10 +1,8 @@
-package actors
+package actors.children
 
-import akka.actor.{Props, Actor}
-import akka.io.Tcp
-import akka.io.Tcp.{Write, PeerClosed}
+import actors.{ToChildMessage, ToProtocolMaster}
+import akka.actor.{Actor, Props}
 import akka.util.ByteString
-import protocol.Protocol
 
 /**
  * Created by anders on 04/03/15.
