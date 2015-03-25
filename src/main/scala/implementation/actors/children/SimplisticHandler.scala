@@ -1,6 +1,6 @@
-package actors.children
+package implementation.actors.children
 
-import actors.{ToChildMessage, ToProtocolMaster}
+import com.protocoldsl.actors.{ToChildMessage, SendToConnection}
 import akka.actor.{Actor, Props}
 import akka.util.ByteString
 
@@ -33,7 +33,7 @@ class SimplisticHandler extends Actor {
         //        self ! InternalMessage(firstNum, data.utf8String.dropRight(2).toInt)
         val y = data.utf8String.dropRight(2).toInt
         isSet = !isSet
-        sender() ! ToProtocolMaster(ByteString.fromString(s"${firstNum * y}\r\n"))
+        sender() ! SendToConnection(ByteString.fromString(s"${firstNum * y}\r\n"))
         //        var x = ByteString.fromString("")
       }
   }

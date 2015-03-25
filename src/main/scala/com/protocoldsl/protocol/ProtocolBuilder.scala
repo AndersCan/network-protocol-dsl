@@ -1,4 +1,4 @@
-package protocol
+package com.protocoldsl.protocol
 
 import scala.collection.mutable.ArrayBuffer
 

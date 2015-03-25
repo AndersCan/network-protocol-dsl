@@ -1,7 +1,9 @@
+package implementation
+
 import java.net.InetSocketAddress
 
-import actors.Server
 import akka.actor.ActorSystem
+import implementation.actors.Server
 
 
 /**

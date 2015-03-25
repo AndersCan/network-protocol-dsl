@@ -1,10 +1,7 @@
-package actors.children
+package implementation.actors.children
 
-import java.lang.Integer
-
-import actors.{ToProtocolMaster, ToChildMessage}
-import akka.actor.{Props, Actor}
-import akka.actor.Actor.Receive
+import com.protocoldsl.actors.{ToChildMessage, SendToConnection}
+import akka.actor.{Actor, Props}
 import akka.util.ByteString
 
 /**
@@ -16,8 +13,6 @@ object DiffieHellman {
 }
 
 class DiffieHellman extends Actor {
-  val primes: Stream[Int] = 2 #:: Stream.from(3, 2).filter(i => primes.takeWhile(j => j * j <= i).forall(k => i % k > 0))
-  //  primes.take(2)
 
   var prime = 0.0
   val privateKey = 10.0
@@ -31,15 +26,13 @@ class DiffieHellman extends Actor {
 
   override def receive: Receive = {
     case ToChildMessage(data) => {
-      println(" CurrentSTEP YO: " + currentStep)
       currentStep match {
         case "prime" =>
-          println("Current step: " + currentStep)
           val receivedValue = data.utf8String.dropRight(2).toDouble
           prime = receivedValue
           println(s"($generator ^ $privateKey) % $prime")
           myPublicKey = scala.math.pow(generator, privateKey) % prime
-          sender() ! ToProtocolMaster(ByteString.fromString(myPublicKey + "\r\n"))
+          sender() ! SendToConnection(ByteString.fromString(myPublicKey + "\r\n"))
           println(s"myPubK: $myPublicKey")
           currentStep = "gotpubkey"
         case "gotpubkey" =>

@@ -1,4 +1,4 @@
-package protocol
+package com.protocoldsl.protocol
 
 /**
  * Created by aoc4 on 19/03/15.

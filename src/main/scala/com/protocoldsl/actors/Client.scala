@@ -1,10 +1,9 @@
-package actors
+package com.protocoldsl.actors
 
 import java.net.InetSocketAddress
 
 import akka.actor.{Actor, ActorRef, Props}
 import akka.io.{IO, Tcp}
-import akka.io.Tcp.ConnectionClosed
 import akka.util.ByteString
 
 /**
