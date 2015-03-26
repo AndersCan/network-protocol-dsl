@@ -42,69 +42,16 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
       Left("msg breaks protocol. not int")
   })
 
-  // http://www.codecodex.com/wiki/Calculate_an_integer_square_root
-  //  def sqrt(number : BigInt) = {
-  //    def next(n : BigInt, i : BigInt) : BigInt = (n + i/n) >> 1
-  //    val one = BigInt(1)
-  //    var n = one
-  //    var n1 = next(n, number)
-  //    while ((n1 - n).abs > one) {
-  //      n = n1
-  //      n1 = next(n, number)
-  //    }
-  //    while (n1 * n1 > number) {
-  //      n1 -= one
-  //    }
-  //    n1
-  //  }
-
 
   val isPrime = new Validator(input => {
-    //    try {
     // Remove \n from end of line
     val maybePrime: BigInt = BigInt(input.dropRight(2).toString)
-    //    val maybePrime: BigInt = BigInt(input.dropRight(2).toString.map(_.asDigit).map(BigInt(_)).toString())
-    //    val primes: Stream[Int] = 2 #:: Stream.from(3, 2).filter(i => primes.takeWhile(j => j * j <= i).forall(k => i % k > 0))
-
     println(maybePrime)
     val result = com.protocoldsl.crypto.Helper.fermat(maybePrime)
     println(result)
     if (result) Right(true)
     else Left("Not prime")
-    //    val result1 = Future {
-    //      fermat(maybePrime)
-    //    }
-    //    val result2 = Future {
-    //      fermat(maybePrime)
-    //    }
-    //    val result3 = Future {
-    //      fermat(maybePrime)
-    //    }
-    //
-    //    val veryLikelyPrime: Future[Either[String,Boolean]] = Future {
-    //      for {
-    //        r1 <- result1
-    //        r2 <- result2
-    //        r3 <- result3
-    //      } yield r1 && r2 && r3
-    //    }
-    //    veryLikelyPrime
-    //    val result = Await.result(veryLikelyPrime, 10 seconds)
-    //    veryLikelyPrime.onSuccess(Right(true))
-    //    veryLikelyPrime.onFailure(Left(""))
-    //    result2.value
-    //    result match {
-    //      case Success(value) => Right(true)
-    //      case Failure(e) => Left("msg breaks protocol. not prime")
-    //      case _ => Left("unknown error when calculating prime")
-    //    }
-  }
-    //      Right(true)
-    //    } catch {
-    //      case e: Exception =>
-    //        Left("msg breaks protocol. not int")
-    //    }
-  )
+  })
 
 
   // TODO - How to add multiple communication channels? {S :: C :: C}

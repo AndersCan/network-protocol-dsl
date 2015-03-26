@@ -8,6 +8,12 @@ import scala.annotation.tailrec
 object Helper {
   val ZERO = BigInt(0)
 
+  /**
+   * Doesn't work for large exponents, function will take too long.
+   * @param x number to be taken to the power of y
+   * @param y exponent of x
+   * @return x to the power of y
+   */
   def pow(x: BigInt, y: BigInt): BigInt = {
     //println(s"mul: $mul and y: $y")
     @tailrec
@@ -20,10 +26,10 @@ object Helper {
 
   /**
    * Test whether given value is holds true to Fermats Little Theorem, if true: p is declared probably prime. IE. Not guaranteed to be correct.
-   * Range of a is 1 to 10000
+   * Range of a is 1 to 10
    */
   def fermat(p: BigInt): Boolean = {
-    val a = BigInt(1 + (scala.math.random * 10000).toInt)
+    val a = BigInt(1 + (scala.math.random * 10).toInt)
     (pow(a, p) - a) % p == ZERO
   }
 
