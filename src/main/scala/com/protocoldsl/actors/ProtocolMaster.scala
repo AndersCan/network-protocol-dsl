@@ -17,10 +17,10 @@ case class ToChildMessage(data: ByteString)
 case class SendToConnection(data: ByteString)
 
 // use to forget last received message and get new message
-case class ForgetLast()
+//case class ForgetLast()
 
 // use to forget last received message send message to client and get new message
-case class ForgetLastWithMessage(data: ByteString)
+//case class ForgetLastWithMessage(data: ByteString)
 
 
 //case class ChildState(msg: ByteString)
@@ -45,7 +45,7 @@ class ProtocolMaster(protocol: Protocol, connection: ActorRef, child: ActorRef) 
       } else {
         println(msg.left)
         // Close connection
-        suicide
+        commitSuicide
       }
 
     case Received(data) => {
@@ -59,7 +59,7 @@ class ProtocolMaster(protocol: Protocol, connection: ActorRef, child: ActorRef) 
         // Close connection
         // todo send error to client?
         // todo send poison pill to child?
-        suicide
+        commitSuicide
         //        context stop self
       }
     }
@@ -67,9 +67,9 @@ class ProtocolMaster(protocol: Protocol, connection: ActorRef, child: ActorRef) 
     case _ => println("Unknown message sent to ProtocolMaster")
   }
 
-  def suicide = {
+  def commitSuicide = {
+//    connection ! PeerClosed
     child ! PoisonPill
-    connection ! PoisonPill
     self ! PoisonPill
   }
 }

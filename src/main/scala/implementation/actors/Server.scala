@@ -6,7 +6,7 @@ import akka.actor.{Actor, Props}
 import akka.io.{IO, Tcp}
 import com.protocoldsl.actors.ProtocolMaster
 import com.protocoldsl.protocol.{ProtocolBuilder, Validator}
-import implementation.actors.children.DiffieHellman
+import implementation.actors.children.{SimplisticHandler, DiffieHellman}
 
 /**
  * Created by anders on 04/03/15.
@@ -43,7 +43,7 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
   })
 
 
-  val isPrime = new Validator(input => {
+  val isPrime = new Validator(input => try {
     // Remove \n from end of line
     val maybePrime: BigInt = BigInt(input.dropRight(2).toString)
     println(maybePrime)
@@ -51,6 +51,9 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
     println(result)
     if (result) Right(true)
     else Left("Not prime")
+  } catch {
+    case e: Exception =>
+      Left("msg breaks protocol. not int")
   })
 
 
@@ -58,22 +61,29 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
   val c = new ProtocolBuilder()
   val s = new ProtocolBuilder()
 
-  // ECHO SERVER
-  //  c send(s, isInt)
-  //  c send(s, isInt)
-  //  s send(c, new Validator(_ => Right(true))) // String
-  //  c gotoStep 0
-  // END ECHO SERVER
+  // Multiply SERVER
+  c send(s, isInt)
+  c send(s, isInt)
+  s send(c, isAnything) // String
+  s gotoStep 0
+
+  // END multiply SERVER
 
   //Diffie
 
-  c send(s, isPrime) // sends prime
-  s send(c, isDouble) // sends shared secret
-  c send(s, isDouble) // sends shared secret
-  c send(s, isAnything)
-  s send(c, isAnything)
-  c gotoStep 3
+  //    c send(s, isPrime) // sends prime
+  //    s send(c, isDouble) // sends shared secret
+  //    c send(s, isDouble) // sends shared secret
+  //    c send(s, isAnything)
+  //    s send(c, isAnything)
+  //    s gotoStep 3
 
+  // loop (boolean, f(true),f(false)
+  // function pb methods that take functions that compute a new protocol builder)
+  //loop(
+  // new pbuilder
+  // c send (s, type)
+  // )
 
   //  val proto = c.compile
   //  val proto = s.compile
@@ -85,14 +95,14 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
 
     case CommandFailed(_: Bind) => context stop self
 
-    case c@Connected(remote, local) =>
+    case cu@Connected(remote, local) =>
       println(s"New Connection: remote: $remote, local: $local")
       val proto = s.compile
-      val diffie = context.actorOf(DiffieHellman.props())
-      //      val child = context.actorOf(SimplisticHandler.props())
+      //      val diffie = context.actorOf(DiffieHellman.props())
+      val child = context.actorOf(SimplisticHandler.props())
       // Sender() is sender of the current message
       val connection = sender()
-      val handler = context.actorOf(ProtocolMaster.props(proto, connection, diffie))
+      val handler = context.actorOf(ProtocolMaster.props(proto, connection, child))
       //      val handler = context.actorOf(Props[SimplisticHandler])
       connection ! Register(handler)
   }

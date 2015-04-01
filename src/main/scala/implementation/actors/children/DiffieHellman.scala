@@ -41,7 +41,9 @@ class DiffieHellman extends Actor {
           println(s"($receivedValue ^ $privateKey) % $prime")
           // sender() ! ToProtocolMaster(ByteString.fromString(myPublicKey + "\r\n"))
           currentStep = "secured"
-        case "secured" => println(s"Shared secret is ${sharedSecret}")
+        case "secured" =>
+          println(s"Shared secret is ${sharedSecret}. Message is ${data.utf8String}")
+          sender() ! SendToConnection(ByteString.fromString("server reply\r\n"))
         case _ => println(s"We got: ${data.utf8String.dropRight(2)}")
       }
     }
