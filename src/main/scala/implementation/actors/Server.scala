@@ -6,7 +6,7 @@ import akka.actor.{Actor, Props}
 import akka.io.{IO, Tcp}
 import com.protocoldsl.actors.ProtocolMaster
 import com.protocoldsl.protocol.{ProtocolBuilder, Validator}
-import implementation.actors.children.{SimplisticHandler, DiffieHellman}
+import implementation.actors.children.SimplisticHandler
 
 /**
  * Created by anders on 04/03/15.
@@ -39,7 +39,7 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
     Right(true)
   } catch {
     case e: Exception =>
-      Left("msg breaks protocol. not int")
+      Left("msg breaks protocol. not double")
   })
 
 
@@ -58,14 +58,26 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
 
 
   // TODO - How to add multiple communication channels? {S :: C :: C}
-  val c = new ProtocolBuilder()
-  val s = new ProtocolBuilder()
+  val client = new ProtocolBuilder()
+  val server = new ProtocolBuilder()
 
   // Multiply SERVER
-  c send(s, isInt)
-  c send(s, isInt)
-  s send(c, isAnything) // String
-  s gotoStep 0
+  //  c send(s, isInt)
+  //  c send(s, isInt)
+  //  s send(c, isAnything) // String
+  //  s gotoStep 0
+
+  client send isInt send isInt receive isAnything
+
+  val protoz = ProtocolBuilder.loop(
+    server receive isInt receive isInt send isAnything
+  )
+  val hehe = ProtocolBuilder.loop(
+    server receive isDouble receive isDouble send isAnything
+  )
+
+
+  val branching: ProtocolBuilder = new ProtocolBuilder().branch(isInt, protoz, hehe)
 
   // END multiply SERVER
 
@@ -97,7 +109,7 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
 
     case cu@Connected(remote, local) =>
       println(s"New Connection: remote: $remote, local: $local")
-      val proto = s.compile
+      val proto = branching.compile
       //      val diffie = context.actorOf(DiffieHellman.props())
       val child = context.actorOf(SimplisticHandler.props())
       // Sender() is sender of the current message

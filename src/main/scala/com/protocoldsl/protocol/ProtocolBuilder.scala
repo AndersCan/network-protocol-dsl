@@ -16,11 +16,26 @@ case class Send(v: Validator) extends MessageType()
 
 case class Receive(v: Validator) extends MessageType()
 
-case class LoopToStep(i: Integer, v: Validator = new Validator(_ => Left("validate run on Loop step"))) extends MessageType()
+case class Loop(pb: ProtocolBuilder, v: Validator = new Validator(_ => Left("validate run on Loop step"))) extends MessageType()
 
-class ProtocolBuilder {
+case class Branch(v: Validator, left: ProtocolBuilder, right: ProtocolBuilder) extends MessageType()
 
-  val states: scala.collection.mutable.ArrayBuffer[MessageType] = ArrayBuffer()
+object ProtocolBuilder {
+  def loop(builder: ProtocolBuilder): ProtocolBuilder = {
+    // builder is first step of loop.
+    // case nil = go back to first step
+    builder.addState(Loop(builder))
+    builder
+  }
+}
+
+class ProtocolBuilder(val states: scala.collection.mutable.ArrayBuffer[MessageType]) {
+
+  //  val states: scala.collection.mutable.ArrayBuffer[MessageType] = ArrayBuffer()
+
+  def this() {
+    this(ArrayBuffer())
+  }
 
   def send(socket: ProtocolBuilder, v: Validator) = {
     this addState Send(v)
@@ -28,18 +43,29 @@ class ProtocolBuilder {
     socket.receive(socket, v)
   }
 
+  def send(v: Validator): ProtocolBuilder = {
+    this addState Send(v)
+    this
+  }
+
   def receive(socket: ProtocolBuilder, v: Validator) = {
     socket addState Receive(v)
+  }
+
+  def receive(v: Validator): ProtocolBuilder = {
+    this addState Receive(v)
+    this
+  }
+
+  def branch(v: Validator, left: ProtocolBuilder, right: ProtocolBuilder): ProtocolBuilder = {
+    states.append(Branch(v, left, right))
+    this
   }
 
   def addState(m: MessageType) = {
     states.append(m)
   }
 
-  // Have to add 1 because StateIndex is incremented AFTER
-  def gotoStep(i: Int): Unit = {
-    states.append(LoopToStep(i))
-  }
 
   def compile = {
     new Protocol(states)
@@ -47,44 +73,49 @@ class ProtocolBuilder {
 
 }
 
-class Protocol(states: ArrayBuffer[MessageType]) {
+class Protocol(var states: ArrayBuffer[MessageType]) {
   // Index of where in 'states' list we are
-  var stateIndex = 0
-
-  // todo Combine send & receive methods?
+  //  var stateIndex = 0
+  // TODO - Combine send & receive methods?
   def validateSendMessage(input: String) = {
-    val msgType: MessageType = getMessageType
+    val msgType: MessageType = getMessageType(input)
 
     msgType match {
       case Receive(v) =>
-        // Protocol is in receive state, not send
         Left("protocol violated - sending when should be receiving")
       case _ => msgType.v.f(input)
     }
-
   }
 
   def validateReceivedMessage(input: String) = {
-    val msgType: MessageType = getMessageType
+    val msgType: MessageType = getMessageType(input)
 
     msgType match {
       case Send(v) =>
-        // todo kill connection
-        // Protocol is in send state, not receive
         Left("protocol violated - receiving when should be sending")
       case _ => msgType.v.f(input)
     }
-
   }
 
-  private def getMessageType: MessageType = {
-    states(stateIndex) match {
-      case loop: LoopToStep =>
-        stateIndex = loop.i
-        getMessageType
+  private def getMessageType(input: String): MessageType = {
+    println(states.head)
+    states.head match {
+      case branch: Branch =>
+        val branchPath = branch.v.f(input)
+        if (branchPath.isRight) {
+          // going to the right
+          println("Going Right")
+          states = branch.right.compile.states
+        } else {
+          println("Going Left")
+          states = branch.left.compile.states
+        }
+        getMessageType(input)
+      case loop: Loop =>
+        states = loop.pb.compile.states
+        getMessageType(input)
       case msg: MessageType =>
-        //        val msgType = msg
-        stateIndex += 1
+        states = states.tail
         msg
       case _ =>
         sys.error("unknown message type")

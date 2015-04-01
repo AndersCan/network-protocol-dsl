@@ -45,7 +45,7 @@ class ProtocolMaster(protocol: Protocol, connection: ActorRef, child: ActorRef) 
       } else {
         println(msg.left)
         // Close connection
-        commitSuicide
+        commitSuicide()
       }
 
     case Received(data) => {
@@ -59,7 +59,7 @@ class ProtocolMaster(protocol: Protocol, connection: ActorRef, child: ActorRef) 
         // Close connection
         // todo send error to client?
         // todo send poison pill to child?
-        commitSuicide
+        commitSuicide()
         //        context stop self
       }
     }
@@ -67,7 +67,7 @@ class ProtocolMaster(protocol: Protocol, connection: ActorRef, child: ActorRef) 
     case _ => println("Unknown message sent to ProtocolMaster")
   }
 
-  def commitSuicide = {
+  def commitSuicide() = {
 //    connection ! PeerClosed
     child ! PoisonPill
     self ! PoisonPill
