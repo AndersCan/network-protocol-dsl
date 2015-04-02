@@ -25,6 +25,8 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
   IO(Tcp) ! Bind(self, inetSocketAddress)
 
   val isAnything = new Validator(_ => Right(true))
+  val nothing = new Validator(_ => Left("NO - Run"))
+
   val isInt = new Validator(x => try {
     // Remove \n from end of line
     x.dropRight(2).toInt
@@ -33,6 +35,17 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
     case e: Exception =>
       Left("msg breaks protocol. not int")
   })
+
+  val intGT5 = new Validator(x => try {
+    // Remove \n from end of line
+    val value = x.dropRight(2).toInt
+    if (value > 5) Right(true)
+    else Left("Not Greater than 5")
+  } catch {
+    case e: Exception =>
+      Left("msg breaks protocol. not int")
+  })
+
   val isDouble = new Validator(x => try {
     // Remove \n from end of line
     x.dropRight(2).toDouble
@@ -60,6 +73,7 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
   // TODO - How to add multiple communication channels? {S :: C :: C}
   val client = new ProtocolBuilder()
   val server = new ProtocolBuilder()
+  val server2 = new ProtocolBuilder()
 
   // Multiply SERVER
   //  c send(s, isInt)
@@ -68,16 +82,17 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
   //  s gotoStep 0
 
   client send isInt send isInt receive isAnything
+  server receive isInt receive isInt send isAnything
 
-  val protoz = ProtocolBuilder.loop(
+  val serverloop = ProtocolBuilder.loop(
     server receive isInt receive isInt send isAnything
   )
   val hehe = ProtocolBuilder.loop(
-    server receive isDouble receive isDouble send isAnything
+    server2 receive isDouble receive isDouble send isAnything
   )
 
 
-  val branching: ProtocolBuilder = new ProtocolBuilder().branch(isInt, protoz, hehe)
+  val branching: ProtocolBuilder = new ProtocolBuilder().branch(serverloop, intGT5, hehe)
 
   // END multiply SERVER
 

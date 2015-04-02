@@ -5,6 +5,7 @@ import scala.collection.mutable.ArrayBuffer
 /**
  * Created by aoc4 on 05/03/15.
  */
+
 sealed case class Validator(f: String => Either[String, Boolean])
 
 
@@ -57,7 +58,7 @@ class ProtocolBuilder(val states: scala.collection.mutable.ArrayBuffer[MessageTy
     this
   }
 
-  def branch(v: Validator, left: ProtocolBuilder, right: ProtocolBuilder): ProtocolBuilder = {
+  def branch(left: ProtocolBuilder, v: Validator, right: ProtocolBuilder): ProtocolBuilder = {
     states.append(Branch(v, left, right))
     this
   }
@@ -97,6 +98,7 @@ class Protocol(var states: ArrayBuffer[MessageType]) {
     }
   }
 
+  // Branch and Looping cases are handled here
   private def getMessageType(input: String): MessageType = {
     println(states.head)
     states.head match {
