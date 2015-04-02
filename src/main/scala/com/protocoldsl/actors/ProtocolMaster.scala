@@ -1,8 +1,12 @@
 package com.protocoldsl.actors
 
 import akka.actor.{Actor, ActorRef, PoisonPill, Props}
-import akka.util.ByteString
+import akka.pattern.ask
+import akka.util.{Timeout, ByteString}
 import com.protocoldsl.protocol.Protocol
+
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
 
 /**
  * Created by anders on 04/03/15.
@@ -57,8 +61,6 @@ class ProtocolMaster(protocol: Protocol, connection: ActorRef, child: ActorRef) 
         println(msg.left)
         println("Closing Connection")
         // Close connection
-        // todo send error to client?
-        // todo send poison pill to child?
         commitSuicide()
         //        context stop self
       }
@@ -68,8 +70,18 @@ class ProtocolMaster(protocol: Protocol, connection: ActorRef, child: ActorRef) 
   }
 
   def commitSuicide() = {
-//    connection ! PeerClosed
-    child ! PoisonPill
+    // todo send error to client?
+    // todo send poison pill to child?
+    try {
+      implicit val timeout = Timeout(1.seconds)
+      val stopped1: Future[Any] = connection ? PoisonPill
+      val stopped2: Future[Any] = child ? PoisonPill
+      Await.result(stopped2, 4.seconds)
+      // the actor has been stopped
+    } catch {
+      // the actor wasn't stopped within 5 seconds
+      case e: akka.pattern.AskTimeoutException =>
+    }
     self ! PoisonPill
   }
 }

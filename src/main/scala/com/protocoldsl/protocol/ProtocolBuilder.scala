@@ -1,7 +1,6 @@
 package com.protocoldsl.protocol
 
 import scala.collection.mutable.ArrayBuffer
-
 /**
  * Created by aoc4 on 05/03/15.
  */
@@ -100,7 +99,6 @@ class Protocol(var states: ArrayBuffer[MessageType]) {
 
   // Branch and Looping cases are handled here
   private def getMessageType(input: String): MessageType = {
-    println(states.head)
     states.head match {
       case branch: Branch =>
         val branchPath = branch.v.f(input)
