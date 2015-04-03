@@ -45,9 +45,6 @@ class ProtocolBuilderTests(_system: ActorSystem) extends TestKit(_system) with I
 
       handler ! Received(simpleMessage)
       child expectNoMsg 2000.millis
-      //      child expectMsg(5000.millis, AnyRef)
-      //      connection expectMsg(5000.millis, PoisonPill)
-
     }
   }
   it must {
@@ -59,13 +56,10 @@ class ProtocolBuilderTests(_system: ActorSystem) extends TestKit(_system) with I
 
       handler ! SendToConnection(simpleMessage)
       connection expectMsg(1000.millis, Write(simpleMessage))
-      //      child expectMsg(5000.millis, AnyRef)
-      //      connection expectMsg(5000.millis, PoisonPill)
-
     }
   }
   it must {
-    "not forward a invalid message from child to connection" in {
+    "must not forward a invalid message from child to connection" in {
       val child = TestProbe()
       val connection = TestProbe()
       val proto = (new ProtocolBuilder() receive isNothing).compile
@@ -73,7 +67,6 @@ class ProtocolBuilderTests(_system: ActorSystem) extends TestKit(_system) with I
 
       handler ! SendToConnection(simpleMessage)
       connection expectNoMsg 1000.millis
-
     }
   }
 }
