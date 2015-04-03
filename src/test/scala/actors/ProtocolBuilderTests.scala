@@ -1,10 +1,10 @@
 package actors
 
 import akka.actor.ActorSystem
-import akka.io.Tcp.Received
+import akka.io.Tcp.{Write, Received}
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import akka.util.ByteString
-import com.protocoldsl.actors.{ProtocolMaster, ToChildMessage}
+import com.protocoldsl.actors.{SendToConnection, ProtocolMaster, ToChildMessage}
 import com.protocoldsl.protocol.{ProtocolBuilder, Validator}
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
@@ -37,19 +37,44 @@ class ProtocolBuilderTests(_system: ActorSystem) extends TestKit(_system) with I
     }
   }
   it must {
-    "not send invalid message" in {
-
+    "not send invalid message to its child" in {
       val child = TestProbe()
       val connection = TestProbe()
       val proto = (new ProtocolBuilder() send isNothing).compile
       val handler = system.actorOf(ProtocolMaster.props(proto, connection.ref, child.ref))
 
       handler ! Received(simpleMessage)
-//      child expectMsg(5000.millis, AnyRef)
-//      connection expectMsg(5000.millis, PoisonPill)
+      child expectNoMsg 2000.millis
+      //      child expectMsg(5000.millis, AnyRef)
+      //      connection expectMsg(5000.millis, PoisonPill)
 
     }
+  }
+  it must {
+    "forward a valid message from child to connection" in {
+      val child = TestProbe()
+      val connection = TestProbe()
+      val proto = (new ProtocolBuilder() send isAnything).compile
+      val handler = system.actorOf(ProtocolMaster.props(proto, connection.ref, child.ref))
 
+      handler ! SendToConnection(simpleMessage)
+      connection expectMsg(1000.millis, Write(simpleMessage))
+      //      child expectMsg(5000.millis, AnyRef)
+      //      connection expectMsg(5000.millis, PoisonPill)
+
+    }
+  }
+  it must {
+    "not forward a invalid message from child to connection" in {
+      val child = TestProbe()
+      val connection = TestProbe()
+      val proto = (new ProtocolBuilder() receive isNothing).compile
+      val handler = system.actorOf(ProtocolMaster.props(proto, connection.ref, child.ref))
+
+      handler ! SendToConnection(simpleMessage)
+      connection expectNoMsg 1000.millis
+
+    }
   }
 }
 

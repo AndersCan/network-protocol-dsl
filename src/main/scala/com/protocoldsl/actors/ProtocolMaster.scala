@@ -59,7 +59,7 @@ class ProtocolMaster(protocol: Protocol, connection: ActorRef, child: ActorRef) 
         child ! ToChildMessage(data)
       } else {
         println(msg.left)
-        println("Closing Connection")
+        //        println("Closing Connection")
         // Close connection
         commitSuicide()
         //        context stop self
@@ -70,18 +70,18 @@ class ProtocolMaster(protocol: Protocol, connection: ActorRef, child: ActorRef) 
   }
 
   def commitSuicide() = {
-    // todo send error to client?
-    // todo send poison pill to child?
+    // TODO - Send error to client?
+    // TODO - Allow user to set suicide rules
     try {
       implicit val timeout = Timeout(1.seconds)
-      val stopped1: Future[Any] = connection ? PoisonPill
+      connection ! PoisonPill
       val stopped2: Future[Any] = child ? PoisonPill
-      Await.result(stopped2, 4.seconds)
+      Await.result(stopped2, 5.seconds)
       // the actor has been stopped
+      self ! PoisonPill
     } catch {
       // the actor wasn't stopped within 5 seconds
       case e: akka.pattern.AskTimeoutException =>
     }
-    self ! PoisonPill
   }
 }

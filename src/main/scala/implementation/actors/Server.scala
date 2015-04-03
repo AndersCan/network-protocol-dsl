@@ -82,17 +82,17 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
   //  s gotoStep 0
 
   client send isInt send isInt receive isAnything
-  server receive isInt receive isInt send isAnything
+  //  server receive isInt receive isInt send isAnything
 
   val serverloop = ProtocolBuilder.loop(
     server receive isInt receive isInt send isAnything
   )
-  val hehe = ProtocolBuilder.loop(
-    server2 receive isDouble receive isDouble send isAnything
-  )
-
-
-  val branching: ProtocolBuilder = new ProtocolBuilder().branch(serverloop, intGT5, hehe)
+  //  val hehe = ProtocolBuilder.loop(
+  //    server2 receive isDouble receive isDouble send isAnything
+  //  )
+  //
+  //
+  //  val branching: ProtocolBuilder = new ProtocolBuilder().branch(serverloop, intGT5, hehe)
 
   // END multiply SERVER
 
@@ -124,7 +124,7 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
 
     case cu@Connected(remote, local) =>
       println(s"New Connection: remote: $remote, local: $local")
-      val proto = branching.compile
+      val proto = serverloop.compile
       //      val diffie = context.actorOf(DiffieHellman.props())
       val child = context.actorOf(SimplisticHandler.props())
       // Sender() is sender of the current message
