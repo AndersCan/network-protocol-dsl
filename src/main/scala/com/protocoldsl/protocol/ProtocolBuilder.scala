@@ -1,6 +1,5 @@
 package com.protocoldsl.protocol
 
-import scala.collection.mutable.ArrayBuffer
 /**
  * Created by aoc4 on 05/03/15.
  */
@@ -21,59 +20,69 @@ case class Loop(pb: ProtocolBuilder, v: Validator = new Validator(_ => Left("val
 case class Branch(v: Validator, left: ProtocolBuilder, right: ProtocolBuilder) extends MessageType()
 
 object ProtocolBuilder {
+  def apply(states: List[MessageType]): ProtocolBuilder = {
+    new ProtocolBuilder(states)
+  }
+
   def loop(builder: ProtocolBuilder): ProtocolBuilder = {
     // builder is first step of loop.
     // case nil = go back to first step
     builder.addState(Loop(builder))
-    builder
   }
 }
 
-class ProtocolBuilder(val states: scala.collection.mutable.ArrayBuffer[MessageType]) {
+class ProtocolBuilder(val states: List[MessageType]) {
 
   //  val states: scala.collection.mutable.ArrayBuffer[MessageType] = ArrayBuffer()
 
   def this() {
-    this(ArrayBuffer())
+    this(List())
   }
 
-  def send(socket: ProtocolBuilder, v: Validator) = {
-    this addState Send(v)
-    // add await to receiver, socket
-    socket.receive(socket, v)
-  }
-
+  /**
+   * Appends a new Send request with the given validator, v.
+   * @param v validates expected message
+   * @return new ProtocolBuilder with Send(v) appended.
+   */
   def send(v: Validator): ProtocolBuilder = {
     this addState Send(v)
-    this
   }
 
-  def receive(socket: ProtocolBuilder, v: Validator) = {
-    socket addState Receive(v)
-  }
-
+  /**
+   * Appends a new Receive request with the given validator, v.
+   * @param v validates expected message
+   * @return new ProtocolBuilder with Receive(v) appended.
+   */
   def receive(v: Validator): ProtocolBuilder = {
     this addState Receive(v)
-    this
   }
 
+  /**
+   * Allows the protocol to branch, either left or right based on the given input.
+   * @param left ProtocolBuilder to follow given a Left result
+   * @param v validates message and picks goes either Left or Right
+   * @param right ProtocolBuilder to follow given a Right result
+   * @return new ProtocolBuilder with Branch(left,v,right) appended.
+   */
   def branch(left: ProtocolBuilder, v: Validator, right: ProtocolBuilder): ProtocolBuilder = {
-    states.append(Branch(v, left, right))
-    this
+    this addState Branch(v, left, right)
   }
 
-  def addState(m: MessageType) = {
-    states.append(m)
+  private def addState(m: MessageType): ProtocolBuilder = {
+    ProtocolBuilder(states.::(m))
   }
 
-
+  /**
+   * Returns the resulting Protocol from the ProtocolBuilder.
+   * @return Protocol
+   */
   def compile = {
     new Protocol(states)
   }
 
 }
 
-class Protocol(var states: ArrayBuffer[MessageType]) {
+class Protocol(private var protocolStates: List[MessageType]) {
   // Index of where in 'states' list we are
   //  var stateIndex = 0
   // TODO - Combine send & receive methods?
@@ -99,23 +108,23 @@ class Protocol(var states: ArrayBuffer[MessageType]) {
 
   // Branch and Looping cases are handled here
   private def getMessageType(input: String): MessageType = {
-    states.head match {
+    protocolStates.head match {
       case branch: Branch =>
         val branchPath = branch.v.f(input)
         if (branchPath.isRight) {
           // going to the right
           println("Going Right")
-          states = branch.right.compile.states
+          protocolStates = branch.right.compile.protocolStates
         } else {
           println("Going Left")
-          states = branch.left.compile.states
+          protocolStates = branch.left.compile.protocolStates
         }
         getMessageType(input)
       case loop: Loop =>
-        states = loop.pb.compile.states
+        protocolStates = loop.pb.compile.protocolStates
         getMessageType(input)
       case msg: MessageType =>
-        states = states.tail
+        protocolStates = protocolStates.tail
         msg
       case _ =>
         sys.error("unknown message type")
