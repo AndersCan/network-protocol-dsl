@@ -15,25 +15,35 @@ case class Send(v: Validator) extends MessageType()
 
 case class Receive(v: Validator) extends MessageType()
 
-case class Loop(pb: ProtocolBuilder, v: Validator = new Validator(_ => Left("validate run on Loop step"))) extends MessageType()
+case class Loop(pb: ProtocolBuilder, loops: Int = -1, v: Validator = new Validator(_ => Left("validate run on Loop step"))) extends MessageType()
 
-case class Branch(v: Validator, left: ProtocolBuilder, right: ProtocolBuilder) extends MessageType()
+
+case class Branch(branch: String => ProtocolBuilder, v: Validator = new Validator(_ => Left("validate ran on Branch step"))) extends MessageType()
 
 object ProtocolBuilder {
   def apply(states: List[MessageType]): ProtocolBuilder = {
     new ProtocolBuilder(states)
   }
 
+  def apply(): ProtocolBuilder = {
+    new ProtocolBuilder()
+  }
+
+  /**
+   * Adds two loop steps to the end of the ProtocolBuilder. The second loop is to ensure the first loop step is always present.
+   * @param builder the ProtocolBuilder currently being created
+   * @return ProtocolBuilder with a loop step that contains itself
+   */
   def loop(builder: ProtocolBuilder): ProtocolBuilder = {
-    // builder is first step of loop.
-    // case nil = go back to first step
-    builder.addState(Loop(builder))
+    builder addState Loop(builder)
+  }
+
+  def loop(builder: ProtocolBuilder, loops: Int): ProtocolBuilder = {
+    builder addState Loop(builder, loops)
   }
 }
 
 class ProtocolBuilder(val states: List[MessageType]) {
-
-  //  val states: scala.collection.mutable.ArrayBuffer[MessageType] = ArrayBuffer()
 
   def this() {
     this(List())
@@ -49,6 +59,23 @@ class ProtocolBuilder(val states: List[MessageType]) {
   }
 
   /**
+   * Adds an infinite loop to this ProtocolBuilder
+   * @return ProtocolBuilder that will loop forever
+   */
+  def loop(): ProtocolBuilder = {
+    this addState Loop(this)
+  }
+
+  /**
+   * Adds a specified amount of loops to the ProtocolBuilder.
+   * @param loops how many times it should be looped
+   * @return ProtocolBuilder with loops
+   */
+  def loop(loops: Int): ProtocolBuilder = {
+    this addState Loop(this, loops)
+  }
+
+  /**
    * Appends a new Receive request with the given validator, v.
    * @param v validates expected message
    * @return new ProtocolBuilder with Receive(v) appended.
@@ -58,18 +85,17 @@ class ProtocolBuilder(val states: List[MessageType]) {
   }
 
   /**
-   * Allows the protocol to branch, either left or right based on the given input.
-   * @param left ProtocolBuilder to follow given a Left result
-   * @param v validates message and picks goes either Left or Right
-   * @param right ProtocolBuilder to follow given a Right result
-   * @return new ProtocolBuilder with Branch(left,v,right) appended.
+   * Allows the protocol to branch depending on received input.
+   * @param branch Branch contains a function that returns a ProtocolBuilder based on given input
+   * @return new ProtocolBuilder with Branch() appended.
    */
-  def branch(left: ProtocolBuilder, v: Validator, right: ProtocolBuilder): ProtocolBuilder = {
-    this addState Branch(v, left, right)
+  def branchOn(branch: MessageType): ProtocolBuilder = {
+    this addState branch
   }
 
+  // Must prepend to list.
   private def addState(m: MessageType): ProtocolBuilder = {
-    ProtocolBuilder(states.::(m))
+    ProtocolBuilder(states.:+(m))
   }
 
   /**
@@ -82,9 +108,7 @@ class ProtocolBuilder(val states: List[MessageType]) {
 
 }
 
-class Protocol(private var protocolStates: List[MessageType]) {
-  // Index of where in 'states' list we are
-  //  var stateIndex = 0
+class Protocol(var protocolStates: List[MessageType]) {
   // TODO - Combine send & receive methods?
   def validateSendMessage(input: String) = {
     val msgType: MessageType = getMessageType(input)
@@ -110,24 +134,25 @@ class Protocol(private var protocolStates: List[MessageType]) {
   private def getMessageType(input: String): MessageType = {
     protocolStates.head match {
       case branch: Branch =>
-        val branchPath = branch.v.f(input)
-        if (branchPath.isRight) {
-          // going to the right
-          println("Going Right")
-          protocolStates = branch.right.compile.protocolStates
-        } else {
-          println("Going Left")
-          protocolStates = branch.left.compile.protocolStates
-        }
+        protocolStates = branch.branch(input).compile.protocolStates
         getMessageType(input)
-      case loop: Loop =>
-        protocolStates = loop.pb.compile.protocolStates
+      case Loop(pb, 0, _) =>
+        println(s"Last Loop")
+        protocolStates = protocolStates.tail
+        getMessageType(input)
+      case Loop(pb, -1, _) =>
+        println(s"Infinite loop")
+        protocolStates = pb.loop().compile.protocolStates
+        getMessageType(input)
+      case Loop(pb, loops, _) =>
+        println(s"Current loop: $loops")
+        protocolStates = pb.loop(loops - 1).compile.protocolStates
         getMessageType(input)
       case msg: MessageType =>
         protocolStates = protocolStates.tail
         msg
       case _ =>
-        sys.error("unknown message type")
+        sys.error("unknown message type received in Protocol")
     }
   }
 }

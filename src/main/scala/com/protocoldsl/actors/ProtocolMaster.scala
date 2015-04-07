@@ -53,16 +53,15 @@ class ProtocolMaster(protocol: Protocol, connection: ActorRef, child: ActorRef) 
       }
 
     case Received(data) => {
-      val msg = protocol.validateReceivedMessage(data.utf8String)
+      // Todo - Stop dropping new line characters?
+      // Remove \n from end of line
+      val msg = protocol.validateReceivedMessage(data.utf8String.dropRight(2))
       if (msg.isRight) {
-        //        sender() ! Write(data)
         child ! ToChildMessage(data)
       } else {
         println(msg.left)
-        //        println("Closing Connection")
         // Close connection
         commitSuicide()
-        //        context stop self
       }
     }
     case PeerClosed => context stop self

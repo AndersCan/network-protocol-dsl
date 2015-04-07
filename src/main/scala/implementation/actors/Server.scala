@@ -5,7 +5,7 @@ import java.net.InetSocketAddress
 import akka.actor.{Actor, Props}
 import akka.io.{IO, Tcp}
 import com.protocoldsl.actors.ProtocolMaster
-import com.protocoldsl.protocol.{ProtocolBuilder, Validator}
+import com.protocoldsl.protocol.{Branch, ProtocolBuilder, Validator}
 import implementation.actors.children.SimplisticHandler
 
 /**
@@ -28,27 +28,17 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
   val nothing = new Validator(_ => Left("NO - Run"))
 
   val isInt = new Validator(x => try {
-    // Remove \n from end of line
-    x.dropRight(2).toInt
+    x.toInt
     Right(true)
   } catch {
     case e: Exception =>
       Left("msg breaks protocol. not int")
   })
 
-  val intGT5 = new Validator(x => try {
-    // Remove \n from end of line
-    val value = x.dropRight(2).toInt
-    if (value > 5) Right(true)
-    else Left("Not Greater than 5")
-  } catch {
-    case e: Exception =>
-      Left("msg breaks protocol. not int")
-  })
 
   val isDouble = new Validator(x => try {
     // Remove \n from end of line
-    x.dropRight(2).toDouble
+    x.toDouble
     Right(true)
   } catch {
     case e: Exception =>
@@ -58,7 +48,7 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
 
   val isPrime = new Validator(input => try {
     // Remove \n from end of line
-    val maybePrime: BigInt = BigInt(input.dropRight(2).toString)
+    val maybePrime: BigInt = BigInt(input.toString)
     println(maybePrime)
     val result = com.protocoldsl.crypto.Helper.fermat(maybePrime)
     println(result)
@@ -73,7 +63,7 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
   // TODO - How to add multiple communication channels? {S :: C :: C}
   val client = new ProtocolBuilder()
   val server = new ProtocolBuilder()
-  val server2 = new ProtocolBuilder()
+
 
   // Multiply SERVER
   //  c send(s, isInt)
@@ -81,20 +71,21 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
   //  s send(c, isAnything) // String
   //  s gotoStep 0
 
-  client send isInt send isInt receive isAnything
-  //  server receive isInt receive isInt send isAnything
+  val mulServer =
+    server receive isInt receive isInt send isAnything loop 5
 
-  val serverloop = ProtocolBuilder.loop(
-    server receive isInt receive isInt send isAnything
+
+  val echoServer = ProtocolBuilder.loop(
+    server receive isAnything send isAnything
   )
-  //  val hehe = ProtocolBuilder.loop(
-  //    server2 receive isDouble receive isDouble send isAnything
-  //  )
-  //
-  //
-  //  val branching: ProtocolBuilder = new ProtocolBuilder().branch(serverloop, intGT5, hehe)
 
-  // END multiply SERVER
+  val mulOrEchoTest = new Branch(input =>
+    if (input forall Character.isDigit) mulServer
+    else echoServer
+  )
+
+  val branching = ProtocolBuilder() branchOn mulOrEchoTest
+
 
   //Diffie
 
@@ -105,16 +96,6 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
   //    s send(c, isAnything)
   //    s gotoStep 3
 
-  // loop (boolean, f(true),f(false)
-  // function pb methods that take functions that compute a new protocol builder)
-  //loop(
-  // new pbuilder
-  // c send (s, type)
-  // )
-
-  //  val proto = c.compile
-  //  val proto = s.compile
-
   def receive = {
     case b@Bound(localAddress) =>
       // do some logging or setup ...
@@ -124,7 +105,7 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
 
     case cu@Connected(remote, local) =>
       println(s"New Connection: remote: $remote, local: $local")
-      val proto = serverloop.compile
+      val proto = mulServer.compile
       //      val diffie = context.actorOf(DiffieHellman.props())
       val child = context.actorOf(SimplisticHandler.props())
       // Sender() is sender of the current message
