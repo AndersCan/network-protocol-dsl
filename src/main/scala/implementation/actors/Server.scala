@@ -6,7 +6,7 @@ import akka.actor.{Actor, Props}
 import akka.io.{IO, Tcp}
 import com.protocoldsl.actors.ProtocolMaster
 import com.protocoldsl.protocol.{Branch, ProtocolBuilder, Validator}
-import implementation.actors.children.SimplisticHandler
+import implementation.actors.children.{MulOrEcho, MulOrEcho$}
 
 /**
  * Created by anders on 04/03/15.
@@ -21,11 +21,10 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
   import akka.io.Tcp._
   import context.system
 
-  //  IO(Tcp) ! Bind(self, new InetSocketAddress("localhost", 0))
   IO(Tcp) ! Bind(self, inetSocketAddress)
 
   val isAnything = new Validator(_ => Right(true))
-  val nothing = new Validator(_ => Left("NO - Run"))
+  val nothing = new Validator(_ => Left("Nothing will always give a Left()"))
 
   val isInt = new Validator(x => try {
     x.toInt
@@ -34,7 +33,6 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
     case e: Exception =>
       Left("msg breaks protocol. not int")
   })
-
 
   val isDouble = new Validator(x => try {
     // Remove \n from end of line
@@ -45,9 +43,7 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
       Left("msg breaks protocol. not double")
   })
 
-
   val isPrime = new Validator(input => try {
-    // Remove \n from end of line
     val maybePrime: BigInt = BigInt(input.toString)
     println(maybePrime)
     val result = com.protocoldsl.crypto.Helper.fermat(maybePrime)
@@ -61,9 +57,7 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
 
 
   // TODO - How to add multiple communication channels? {S :: C :: C}
-  val client = new ProtocolBuilder()
   val server = new ProtocolBuilder()
-
 
   // Multiply SERVER
   //  c send(s, isInt)
@@ -72,7 +66,7 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
   //  s gotoStep 0
 
   val mulServer =
-    server receive isInt receive isInt send isAnything loop 5
+    server receive isInt receive isInt send isAnything loop 1
 
 
   val echoServer = ProtocolBuilder.loop(
@@ -105,14 +99,11 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
 
     case cu@Connected(remote, local) =>
       println(s"New Connection: remote: $remote, local: $local")
-      val proto = mulServer.compile
-      //      val diffie = context.actorOf(DiffieHellman.props())
-      val child = context.actorOf(SimplisticHandler.props())
+      val proto = branching.compile
+      val child = context.actorOf(MulOrEcho.props())
       // Sender() is sender of the current message
       val connection = sender()
       val handler = context.actorOf(ProtocolMaster.props(proto, connection, child))
-      //      val handler = context.actorOf(Props[SimplisticHandler])
       connection ! Register(handler)
   }
-
 }

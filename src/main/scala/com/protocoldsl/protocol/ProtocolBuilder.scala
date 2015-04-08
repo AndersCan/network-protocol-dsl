@@ -17,6 +17,7 @@ case class Receive(v: Validator) extends MessageType()
 
 case class Loop(pb: ProtocolBuilder, loops: Int = -1, v: Validator = new Validator(_ => Left("validate run on Loop step"))) extends MessageType()
 
+case class END(v: Validator = new Validator(_ => Left("validate run on END step"))) extends MessageType()
 
 case class Branch(branch: String => ProtocolBuilder, v: Validator = new Validator(_ => Left("validate ran on Branch step"))) extends MessageType()
 
@@ -93,6 +94,7 @@ class ProtocolBuilder(val states: List[MessageType]) {
     this addState branch
   }
 
+
   // Must prepend to list.
   private def addState(m: MessageType): ProtocolBuilder = {
     ProtocolBuilder(states.:+(m))
@@ -104,6 +106,7 @@ class ProtocolBuilder(val states: List[MessageType]) {
    */
   def compile = {
     new Protocol(states)
+    //    new Protocol((this addState END()) states)
   }
 
 }
@@ -151,8 +154,20 @@ class Protocol(var protocolStates: List[MessageType]) {
       case msg: MessageType =>
         protocolStates = protocolStates.tail
         msg
+      case msg: END =>
+        // End of protocol reached
+        // TODO Implement end
+        msg
       case _ =>
         sys.error("unknown message type received in Protocol")
+    }
+  }
+
+  // TODO Implement end
+  def protocolFinished(): Boolean = {
+    protocolStates.head match {
+      case END => true
+      case _ => false
     }
   }
 }

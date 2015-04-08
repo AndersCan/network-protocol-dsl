@@ -1,9 +1,9 @@
 package com.protocoldsl.actors
 
-import akka.actor.{Actor, ActorRef, PoisonPill, Props}
+import akka.actor._
 import akka.pattern.ask
 import akka.util.{Timeout, ByteString}
-import com.protocoldsl.protocol.Protocol
+import com.protocoldsl.protocol.{END, Protocol}
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
@@ -19,6 +19,7 @@ object ProtocolMaster {
 case class ToChildMessage(data: ByteString)
 
 case class SendToConnection(data: ByteString)
+
 
 // use to forget last received message and get new message
 //case class ForgetLast()
@@ -64,20 +65,29 @@ class ProtocolMaster(protocol: Protocol, connection: ActorRef, child: ActorRef) 
         commitSuicide()
       }
     }
-    case PeerClosed => context stop self
+    case PeerClosed =>
+      commitSuicide()
+    case END =>
+      // End of Protocol Reached.
+      commitSuicide()
+
+
     case _ => println("Unknown message sent to ProtocolMaster")
   }
+
+  def scheduler: Scheduler
 
   def commitSuicide() = {
     // TODO - Send error to client?
     // TODO - Allow user to set suicide rules
+    //    http://doc.akka.io/docs/akka/snapshot/scala/scheduler.html
     try {
-      implicit val timeout = Timeout(1.seconds)
+
       connection ! PoisonPill
-      val stopped2: Future[Any] = child ? PoisonPill
-      Await.result(stopped2, 5.seconds)
+
+      child ! PoisonPill
       // the actor has been stopped
-      self ! PoisonPill
+      scheduler.schedule(10 seconds, 0 seconds, self, PoisonPill)
     } catch {
       // the actor wasn't stopped within 5 seconds
       case e: akka.pattern.AskTimeoutException =>
