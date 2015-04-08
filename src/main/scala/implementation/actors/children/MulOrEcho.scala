@@ -31,8 +31,12 @@ class MulOrEcho extends Actor {
   def mulServer: Receive = {
     case ToChildMessage(data) =>
       if (firstNumber) {
-        firstNum = data.utf8String.dropRight(2).toInt
-        firstNumber = !firstNumber
+        if (!(data.utf8String.dropRight(2) forall Character.isDigit)) {
+          println("I'm not expecting a String!")
+        } else {
+          firstNum = data.utf8String.dropRight(2).toInt
+          firstNumber = !firstNumber
+        }
       } else {
         val y = data.utf8String.dropRight(2).toInt
         firstNumber = !firstNumber

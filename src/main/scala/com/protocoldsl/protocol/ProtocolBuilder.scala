@@ -15,11 +15,11 @@ case class Send(v: Validator) extends MessageType()
 
 case class Receive(v: Validator) extends MessageType()
 
-case class Loop(pb: ProtocolBuilder, loops: Int = -1, v: Validator = new Validator(_ => Left("validate run on Loop step"))) extends MessageType()
-
-case class END(v: Validator = new Validator(_ => Left("validate run on END step"))) extends MessageType()
+case class Loop(pb: ProtocolBuilder, loops: Int = -1, next: ProtocolBuilder = ProtocolBuilder().end, v: Validator = new Validator(_ => Left("validate run on Loop step"))) extends MessageType()
 
 case class Branch(branch: String => ProtocolBuilder, v: Validator = new Validator(_ => Left("validate ran on Branch step"))) extends MessageType()
+
+case class END(v: Validator = new Validator(_ => Left("validate run on END step"))) extends MessageType()
 
 object ProtocolBuilder {
   def apply(states: List[MessageType]): ProtocolBuilder = {
@@ -72,8 +72,8 @@ class ProtocolBuilder(val states: List[MessageType]) {
    * @param loops how many times it should be looped
    * @return ProtocolBuilder with loops
    */
-  def loop(loops: Int): ProtocolBuilder = {
-    this addState Loop(this, loops)
+  def looped(loops: Int, after: ProtocolBuilder): ProtocolBuilder = {
+    this addState Loop(this, loops, after)
   }
 
   /**
@@ -98,6 +98,15 @@ class ProtocolBuilder(val states: List[MessageType]) {
   // Must prepend to list.
   private def addState(m: MessageType): ProtocolBuilder = {
     ProtocolBuilder(states.:+(m))
+  }
+
+  /**
+   * Returns the resulting Protocol from the ProtocolBuilder.
+   * @return Protocol
+   */
+  def end = {
+    this addState END()
+    //    new Protocol((this addState END()) states)
   }
 
   /**
@@ -135,21 +144,24 @@ class Protocol(var protocolStates: List[MessageType]) {
 
   // Branch and Looping cases are handled here
   private def getMessageType(input: String): MessageType = {
+    println(s"States: $protocolStates")
     protocolStates.head match {
       case branch: Branch =>
         protocolStates = branch.branch(input).compile.protocolStates
         getMessageType(input)
-      case Loop(pb, 0, _) =>
+      case Loop(pb, 0, next, _) =>
         println(s"Last Loop")
-        protocolStates = protocolStates.tail
+        println(s"Loop: $protocolStates")
+        //        println(s"Here: ${protocolStates.tail}")
+        protocolStates = next.compile.protocolStates
         getMessageType(input)
-      case Loop(pb, -1, _) =>
+      case Loop(pb, -1, _, _) =>
         println(s"Infinite loop")
         protocolStates = pb.loop().compile.protocolStates
         getMessageType(input)
-      case Loop(pb, loops, _) =>
+      case Loop(pb, loops, next, _) =>
         println(s"Current loop: $loops")
-        protocolStates = pb.loop(loops - 1).compile.protocolStates
+        protocolStates = pb.looped(loops - 1, next).compile.protocolStates
         getMessageType(input)
       case msg: MessageType =>
         protocolStates = protocolStates.tail
@@ -160,10 +172,10 @@ class Protocol(var protocolStates: List[MessageType]) {
   }
 
   // TODO Implement end
-//  def protocolFinished(): Boolean = {
-//    protocolStates.head match {
-//      case END => true
-//      case _ => false
-//    }
-//  }
+  //  def protocolFinished(): Boolean = {
+  //    protocolStates.head match {
+  //      case END => true
+  //      case _ => false
+  //    }
+  //  }
 }

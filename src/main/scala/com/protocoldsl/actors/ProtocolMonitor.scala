@@ -8,8 +8,8 @@ import com.protocoldsl.protocol.{END, Protocol}
  * Created by anders on 04/03/15.
  */
 
-object ProtocolMaster {
-  def props(protocol: Protocol, connection: ActorRef, child: ActorRef) = Props(classOf[ProtocolMaster], protocol, connection, child)
+object ProtocolMonitor {
+  def props(protocol: Protocol, connection: ActorRef, child: ActorRef) = Props(classOf[ProtocolMonitor], protocol, connection, child)
 }
 
 case class ToChildMessage(data: ByteString)
@@ -23,6 +23,7 @@ case class SendToConnection(data: ByteString)
 // use to forget last received message send message to client and get new message
 //case class ForgetLastWithMessage(data: ByteString)
 
+// ProtocolMonitor
 
 //case class ChildState(msg: ByteString)
 /**
@@ -31,7 +32,7 @@ case class SendToConnection(data: ByteString)
  * @param connection TCP Actor connection
  * @param child Actor that uses the received messages
  */
-class ProtocolMaster(protocol: Protocol, connection: ActorRef, child: ActorRef) extends Actor {
+class ProtocolMonitor(protocol: Protocol, connection: ActorRef, child: ActorRef) extends Actor {
 
 
   import akka.io.Tcp._
@@ -68,7 +69,7 @@ class ProtocolMaster(protocol: Protocol, connection: ActorRef, child: ActorRef) 
       commitSuicide()
 
 
-    case _ => println("Unknown message sent to ProtocolMaster")
+    case _ => println("Unknown message sent to ProtocolMonitor")
   }
 
 
@@ -77,9 +78,7 @@ class ProtocolMaster(protocol: Protocol, connection: ActorRef, child: ActorRef) 
     // TODO - Allow user to set suicide rules
     //    http://doc.akka.io/docs/akka/snapshot/scala/scheduler.html
     try {
-
       connection ! PoisonPill
-
       child ! PoisonPill
       // the actor has been stopped
       self ! PoisonPill

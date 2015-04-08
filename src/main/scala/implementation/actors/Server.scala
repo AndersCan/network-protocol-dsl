@@ -4,9 +4,9 @@ import java.net.InetSocketAddress
 
 import akka.actor.{Actor, Props}
 import akka.io.{IO, Tcp}
-import com.protocoldsl.actors.ProtocolMaster
+import com.protocoldsl.actors.ProtocolMonitor
 import com.protocoldsl.protocol.{Branch, ProtocolBuilder, Validator}
-import implementation.actors.children.{MulOrEcho, MulOrEcho$}
+import implementation.actors.children.MulOrEcho
 
 /**
  * Created by anders on 04/03/15.
@@ -27,6 +27,7 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
   val nothing = new Validator(_ => Left("Nothing will always give a Left()"))
 
   val isInt = new Validator(x => try {
+    println("This must be an Int")
     x.toInt
     Right(true)
   } catch {
@@ -57,7 +58,7 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
 
 
   // TODO - How to add multiple communication channels? {S :: C :: C}
-  val server = new ProtocolBuilder()
+  implicit val server = new ProtocolBuilder()
 
   // Multiply SERVER
   //  c send(s, isInt)
@@ -66,8 +67,7 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
   //  s gotoStep 0
 
   val mulServer =
-    server receive isInt receive isInt send isAnything loop 1
-
+    server receive isInt receive isInt send isAnything looped(1, server receive isAnything loop())
 
   val echoServer = ProtocolBuilder.loop(
     server receive isAnything send isAnything
@@ -103,7 +103,7 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
       val child = context.actorOf(MulOrEcho.props())
       // Sender() is sender of the current message
       val connection = sender()
-      val handler = context.actorOf(ProtocolMaster.props(proto, connection, child))
+      val handler = context.actorOf(ProtocolMonitor.props(proto, connection, child))
       connection ! Register(handler)
   }
 }
