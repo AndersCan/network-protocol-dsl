@@ -154,20 +154,16 @@ class Protocol(var protocolStates: List[MessageType]) {
       case msg: MessageType =>
         protocolStates = protocolStates.tail
         msg
-      case msg: END =>
-        // End of protocol reached
-        // TODO Implement end
-        msg
       case _ =>
         sys.error("unknown message type received in Protocol")
     }
   }
 
   // TODO Implement end
-  def protocolFinished(): Boolean = {
-    protocolStates.head match {
-      case END => true
-      case _ => false
-    }
-  }
+//  def protocolFinished(): Boolean = {
+//    protocolStates.head match {
+//      case END => true
+//      case _ => false
+//    }
+//  }
 }

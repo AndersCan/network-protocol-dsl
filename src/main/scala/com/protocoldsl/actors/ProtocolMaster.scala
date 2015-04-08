@@ -1,12 +1,8 @@
 package com.protocoldsl.actors
 
 import akka.actor._
-import akka.pattern.ask
-import akka.util.{Timeout, ByteString}
+import akka.util.ByteString
 import com.protocoldsl.protocol.{END, Protocol}
-
-import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
 
 /**
  * Created by anders on 04/03/15.
@@ -75,7 +71,6 @@ class ProtocolMaster(protocol: Protocol, connection: ActorRef, child: ActorRef) 
     case _ => println("Unknown message sent to ProtocolMaster")
   }
 
-  def scheduler: Scheduler
 
   def commitSuicide() = {
     // TODO - Send error to client?
@@ -87,7 +82,7 @@ class ProtocolMaster(protocol: Protocol, connection: ActorRef, child: ActorRef) 
 
       child ! PoisonPill
       // the actor has been stopped
-      scheduler.schedule(10 seconds, 0 seconds, self, PoisonPill)
+      self ! PoisonPill
     } catch {
       // the actor wasn't stopped within 5 seconds
       case e: akka.pattern.AskTimeoutException =>
