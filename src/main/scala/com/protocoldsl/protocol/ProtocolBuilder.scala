@@ -21,6 +21,8 @@ case class Branch(branch: String => ProtocolBuilder, v: Validator = new Validato
 
 case class END(v: Validator = new Validator(_ => Left("validate run on END step"))) extends MessageType()
 
+
+
 object ProtocolBuilder {
   def apply(states: List[MessageType]): ProtocolBuilder = {
     new ProtocolBuilder(states)
@@ -115,7 +117,6 @@ class ProtocolBuilder(val states: List[MessageType]) {
    */
   def compile = {
     new Protocol(states)
-    //    new Protocol((this addState END()) states)
   }
 
 }
@@ -144,23 +145,22 @@ class Protocol(var protocolStates: List[MessageType]) {
 
   // Branch and Looping cases are handled here
   private def getMessageType(input: String): MessageType = {
-    println(s"States: $protocolStates")
+    //    println(s"States: $protocolStates")
     protocolStates.head match {
       case branch: Branch =>
         protocolStates = branch.branch(input).compile.protocolStates
         getMessageType(input)
       case Loop(pb, 0, next, _) =>
-        println(s"Last Loop")
-        println(s"Loop: $protocolStates")
-        //        println(s"Here: ${protocolStates.tail}")
+        //        println(s"Last Loop")
+        //        println(s"Loop: $protocolStates")
         protocolStates = next.compile.protocolStates
         getMessageType(input)
       case Loop(pb, -1, _, _) =>
-        println(s"Infinite loop")
+        //        println(s"Infinite loop")
         protocolStates = pb.loop().compile.protocolStates
         getMessageType(input)
       case Loop(pb, loops, next, _) =>
-        println(s"Current loop: $loops")
+        //        println(s"Current loop: $loops")
         protocolStates = pb.looped(loops - 1, next).compile.protocolStates
         getMessageType(input)
       case msg: MessageType =>

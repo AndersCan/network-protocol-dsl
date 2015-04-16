@@ -16,6 +16,10 @@ case class ToChildMessage(data: ByteString)
 
 case class SendToConnection(data: ByteString)
 
+case class ProtocolFailure(error: Any)
+
+case object ChildFinished
+
 
 // use to forget last received message and get new message
 //case class ForgetLast()
@@ -45,46 +49,32 @@ class ProtocolMonitor(protocol: Protocol, connection: ActorRef, child: ActorRef)
       if (msg.isRight) {
         connection ! Write(data)
       } else {
-        println(msg.left)
-        // Close connection
-        commitSuicide()
+        //Protocol error
+        initiateStop(msg.left)
       }
 
-    case Received(data) => {
+    case Received(data) =>
       // Todo - Stop dropping new line characters?
       // Remove \n from end of line
       val msg = protocol.validateReceivedMessage(data.utf8String.dropRight(2))
       if (msg.isRight) {
         child ! ToChildMessage(data)
       } else {
-        println(msg.left)
-        // Close connection
-        commitSuicide()
+        // Protocol error
+        initiateStop(msg.left)
       }
-    }
     case PeerClosed =>
-      commitSuicide()
-    case END =>
-      // End of Protocol Reached.
-      commitSuicide()
-
-
+      initiateStop(PeerClosed)
+    case ChildFinished =>
+      stopSelf()
     case _ => println("Unknown message sent to ProtocolMonitor")
   }
 
+  def initiateStop(err: Any) = {
+    child ! ProtocolFailure(err)
+  }
 
-  def commitSuicide() = {
-    // TODO - Send error to client?
-    // TODO - Allow user to set suicide rules
-    //    http://doc.akka.io/docs/akka/snapshot/scala/scheduler.html
-    try {
-      connection ! PoisonPill
-      child ! PoisonPill
-      // the actor has been stopped
-      self ! PoisonPill
-    } catch {
-      // the actor wasn't stopped within 5 seconds
-      case e: akka.pattern.AskTimeoutException =>
-    }
+  def stopSelf() = {
+    self ! PoisonPill
   }
 }

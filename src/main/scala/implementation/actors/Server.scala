@@ -6,7 +6,7 @@ import akka.actor.{Actor, Props}
 import akka.io.{IO, Tcp}
 import com.protocoldsl.actors.ProtocolMonitor
 import com.protocoldsl.protocol.{Branch, ProtocolBuilder, Validator}
-import implementation.actors.children.MulOrEcho
+import implementation.actors.children.{DiffieHellman, MulOrEcho}
 
 /**
  * Created by anders on 04/03/15.
@@ -82,6 +82,7 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
 
 
   //Diffie
+  val diffi = server receive isPrime send isDouble receive isDouble looped(0, server receive isAnything send isAnything loop())
 
   //    c send(s, isPrime) // sends prime
   //    s send(c, isDouble) // sends shared secret
@@ -99,8 +100,8 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
 
     case cu@Connected(remote, local) =>
       println(s"New Connection: remote: $remote, local: $local")
-      val proto = branching.compile
-      val child = context.actorOf(MulOrEcho.props())
+      val proto = diffi.compile
+      val child = context.actorOf(DiffieHellman.props())
       // Sender() is sender of the current message
       val connection = sender()
       val handler = context.actorOf(ProtocolMonitor.props(proto, connection, child))
