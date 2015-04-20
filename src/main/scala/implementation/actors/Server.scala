@@ -60,12 +60,6 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
   // TODO - How to add multiple communication channels? {S :: C :: C}
   implicit val server = new ProtocolBuilder()
 
-  // Multiply SERVER
-  //  c send(s, isInt)
-  //  c send(s, isInt)
-  //  s send(c, isAnything) // String
-  //  s gotoStep 0
-
   val mulServer =
     server receive isInt receive isInt send isAnything looped(1, server receive isAnything loop())
 
@@ -100,8 +94,8 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
 
     case cu@Connected(remote, local) =>
       println(s"New Connection: remote: $remote, local: $local")
-      val proto = diffi.compile
-      val child = context.actorOf(DiffieHellman.props())
+      val proto = echoServer.compile
+      val child = context.actorOf(MulOrEcho.props())
       // Sender() is sender of the current message
       val connection = sender()
       val handler = context.actorOf(ProtocolMonitor.props(proto, connection, child))

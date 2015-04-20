@@ -67,7 +67,10 @@ class ProtocolMonitor(protocol: Protocol, connection: ActorRef, child: ActorRef)
       initiateStop(PeerClosed)
     case ChildFinished =>
       stopSelf()
-    case _ => println("Unknown message sent to ProtocolMonitor")
+    case err@ErrorClosed(msg) =>
+      // Connection closed/reset by client
+      initiateStop(err)
+    case unknown@_ => println(s"Unknown message sent to ProtocolMonitor: $unknown")
   }
 
   def initiateStop(err: Any) = {
