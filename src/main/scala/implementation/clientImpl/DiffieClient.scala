@@ -1,57 +1,72 @@
 package implementation.clientImpl
 
-import java.net.InetSocketAddress
-
 import akka.actor._
-import akka.io.{IO, Tcp}
 import akka.util.ByteString
-
-import scala.concurrent.duration._
+import com.protocoldsl.actors.{Initiation, SendToConnection, ToChildMessage}
+import org.jasypt.util.text.BasicTextEncryptor
 
 /**
  * Created by anders on 16/04/15.
  */
 
 object DiffieClient {
-  def props(remote: InetSocketAddress) =
-    Props(classOf[DiffieClient], remote)
+  def props() =
+    Props(classOf[DiffieClient])
 }
 
-class DiffieClient(remoteHost: InetSocketAddress) extends Actor {
+class DiffieClient() extends Actor {
 
-  import Tcp._
-  import context.system
+  val prime: Double = BigInt.probablePrime(8, scala.util.Random).toDouble
+  //  val prime = 23.0
+  val generator = 5.0
+  // Generate a random Integer
+  val privateKey = math.abs(scala.util.Random.nextInt(10) + 1)
+  //  val privateKey = 6
+  var myPublicKey = 0.0
 
-  var connection: ActorRef = null
+  var sharedSecret = 0.0 // only A and B knows this
+
+  var currentStep = "START"
+
+  val textEncryptor = new BasicTextEncryptor()
 
   def receive = {
-    case CommandFailed(_: Connect) =>
-      context stop self
-    case c@Connected(remote, local) =>
-      connection = sender()
-      connection ! Register(self)
-      self ! "send"
-      context become connected
-    case CommandFailed(w: Write) =>
-    // O/S buffer was full
-    case "close" =>
-      connection ! Close
-    case _: ConnectionClosed =>
-      context stop self
+    case Initiation =>
+      // send prime
+      println(s"PrivateKey: $privateKey")
+      println(s"Sending prime: $prime")
+      //      sender() ! SendToConnection(ByteString.fromString(prime.toString))
+      sender() ! SendToConnection(ByteString.fromString(prime.toString))
+      currentStep = "pubkey"
+      // wait for pubkey
+      context become waitingForPubkey
     case _ =>
-      println("Unknown message")
+      println("Unknown message...")
   }
 
-  def connected: Receive = {
-    case Received(data) =>
-      println(s"Received: ${data.utf8String}")
-      connection ! Tcp.Write(ByteString.fromString("Client reply\r\n"))
-    case "send" =>
-      println("Sending msg to server...")
-      connection ! Tcp.Write(ByteString.fromString("Client reply\r\n"))
+  def waitingForPubkey: Receive = {
+    case ToChildMessage(data) =>
+      val receivedValue = data.asInstanceOf[Double]
+      println(s"Received PubKey: $receivedValue")
+      myPublicKey = scala.math.pow(generator, privateKey) % prime
+      println(s"Sending MyPubKey: $myPublicKey")
+      sender() ! SendToConnection(ByteString.fromString(myPublicKey.toString))
+      sharedSecret = scala.math.pow(receivedValue, privateKey) % prime
+      println(s"Shared Secret: ($receivedValue^$privateKey) % $prime")
+      println(s"Shared Secret: $sharedSecret")
+      textEncryptor.setPassword(sharedSecret.toString)
+      context become secureCom
+      // Start sending something
+      self.tell(currentStep, sender())
   }
 
-  override def preStart() {
-    IO(Tcp) ! Connect(remoteHost)
+  def secureCom: Receive = {
+    case _ =>
+      sender() ! SendToConnection(sec("Hello From Client -- Secure Communication"))
+    //      println(s"sec: $sharedSecret")
+  }
+
+  def sec(in: String): ByteString = {
+    ByteString.fromString(textEncryptor.encrypt(in))
   }
 }

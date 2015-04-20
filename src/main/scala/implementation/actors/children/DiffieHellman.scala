@@ -2,7 +2,7 @@ package implementation.actors.children
 
 import akka.actor.{Actor, Props}
 import akka.util.ByteString
-import com.protocoldsl.actors.{ChildFinished, ProtocolFailure, SendToConnection, ToChildMessage}
+import com.protocoldsl.actors._
 import org.jasypt.util.text.BasicTextEncryptor
 
 /**
@@ -18,9 +18,10 @@ object DiffieHellman {
 class DiffieHellman extends Actor {
 
   var prime = 0.0
-  val generator = 3.0
+  val generator = 5.0
   // Generate a random Integer
-  val privateKey = math.abs(scala.util.Random.nextInt(100) + 1)
+  val privateKey = math.abs(scala.util.Random.nextInt(10) + 1)
+  //  val privateKey = 15
   var myPublicKey = 0.0
 
   var sharedSecret = 0.0 // only A and B knows this
@@ -33,24 +34,27 @@ class DiffieHellman extends Actor {
     case ToChildMessage(data) =>
       currentStep match {
         case "prime" =>
-          val receivedValue = data.asInstanceOf[Double]
+          println(s"PrivateKey: $privateKey")
+          val receivedValue = data.toString.toDouble
+          println(s"Prime: $receivedValue")
           prime = receivedValue
-          println(s"($generator ^ $privateKey) % $prime")
           myPublicKey = scala.math.pow(generator, privateKey) % prime
+          println(s"Sending MyPubKey: $myPublicKey")
           sender() ! SendToConnection(ByteString.fromString(myPublicKey + "\r\n"))
-          println(s"myPubK: $myPublicKey")
           currentStep = "gotpubkey"
         case "gotpubkey" =>
-          val receivedValue = data.asInstanceOf[Double]
+          val receivedValue = data.toString.toDouble
+          println(s"Received PubKey: $receivedValue")
           sharedSecret = scala.math.pow(receivedValue, privateKey) % prime
-          println(s"($receivedValue ^ $privateKey) % $prime")
+          println(s"Shared Secret: ($receivedValue^$privateKey) % $prime")
+          println(s"Shared Secret: $sharedSecret")
           textEncryptor.setPassword(sharedSecret.toString)
-          println(s"Shared secret is $sharedSecret")
           currentStep = "secured"
         case "secured" =>
           val encrypted = textEncryptor.encrypt(data.toString)
-          println(s"Encrypted is $encrypted")
-          println(s"MessageMessage is ${textEncryptor.decrypt(encrypted)}")
+          //          println(s"Encrypted is $encrypted")
+          //          println(s"Secret message is ${textEncryptor.decrypt(encrypted)}")
+          //          println(s"sec: $sharedSecret")
           sender() ! SendToConnection(ByteString.fromString("server reply\r\n"))
         case _ => println(s"We got an unknown message: $data")
       }
@@ -59,6 +63,9 @@ class DiffieHellman extends Actor {
       // Protocol has been ended. End self then tell parent
       println(err)
       sender() ! ChildFinished
-    case _ => println("unknown message")
+    case Initiation =>
+      // Do Initiation
+      println("Server Initiation...")
+    case unknown@_ => println(s"unknown message: $unknown")
   }
 }

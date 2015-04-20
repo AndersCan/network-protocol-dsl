@@ -78,6 +78,15 @@ class ProtocolBuilder(val states: List[MessageType]) {
   }
 
   /**
+   * Then adds allows two ProtocolBuilder to be combined to one. Basically syntactic sugar for adding a Loop that loops 0 times.
+   * @param next ProtocolBuilder to be run after first run
+   * @return ProtocolBuilder with 'next' appended
+   */
+  def next(next: ProtocolBuilder): ProtocolBuilder = {
+    this addState Loop(this, 0, next)
+  }
+
+  /**
    * Appends a new Receive request with the given validator, v.
    * @param v validates expected message
    * @return new ProtocolBuilder with Receive(v) appended.
@@ -96,7 +105,7 @@ class ProtocolBuilder(val states: List[MessageType]) {
   }
 
 
-  // Must prepend to list.
+  // Must append to list.
   private def addState(m: MessageType): ProtocolBuilder = {
     ProtocolBuilder(states.:+(m))
   }

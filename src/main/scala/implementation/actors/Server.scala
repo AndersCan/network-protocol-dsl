@@ -6,7 +6,7 @@ import akka.actor.{Actor, Props}
 import akka.io.{IO, Tcp}
 import com.protocoldsl.actors.ProtocolMonitor
 import com.protocoldsl.protocol.{Branch, ProtocolBuilder, Validator}
-import implementation.actors.children.{IsInt, MulOrEcho}
+import implementation.actors.children.{DiffieHellman, IsInt}
 
 /**
  * Created by anders on 04/03/15.
@@ -40,13 +40,13 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
 
   val isPrime = new Validator(input => try {
     val maybePrime: BigInt = BigInt(input.toString)
-    println(maybePrime)
     val result = com.protocoldsl.crypto.Helper.fermat(maybePrime)
-    if (result) Right(maybePrime)
+    if (result) Right(input.toDouble)
     else Left("Not prime")
   } catch {
     case e: Exception =>
-      Left("msg breaks protocol. not int")
+      println(e.getMessage)
+      Left("msg breaks protocol. not Prime")
   })
 
 
@@ -68,7 +68,7 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
   val branching = ProtocolBuilder() branchOn mulOrEchoTest
 
   //Diffie
-  val diffi = server receive isPrime send isDouble receive isDouble looped(0, server receive isAnything send isAnything loop())
+  val diffie = server receive isPrime send isDouble receive isDouble looped(0, server receive isAnything send isAnything loop())
 
   //    c send(s, isPrime) // sends prime
   //    s send(c, isDouble) // sends shared secret
@@ -86,8 +86,8 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
 
     case cu@Connected(remote, local) =>
       println(s"New Connection: remote: $remote, local: $local")
-      val proto = branching.compile
-      val consumer = context.actorOf(MulOrEcho.props())
+      val proto = diffie.compile
+      val consumer = context.actorOf(DiffieHellman.props())
       // Sender() is sender of the current message
       val connection = sender()
       val handler = context.actorOf(ProtocolMonitor.props(proto, connection, consumer))

@@ -2,7 +2,7 @@ package com.protocoldsl.actors
 
 import akka.actor._
 import akka.util.ByteString
-import com.protocoldsl.protocol.{END, Protocol}
+import com.protocoldsl.protocol.Protocol
 
 /**
  * Created by anders on 04/03/15.
@@ -19,6 +19,8 @@ case class SendToConnection(data: ByteString)
 case class ProtocolFailure(error: Any)
 
 case object ChildFinished
+
+case object Initiation
 
 /**
  * ProtocolMaster Handles the incoming messages sent from a user and checks whether it obeys the defined protocol
@@ -53,6 +55,8 @@ class ProtocolMonitor(protocol: Protocol, connection: ActorRef, consumer: ActorR
         // Protocol error
         initiateStop(msg.left)
       }
+    case Initiation =>
+      consumer ! Initiation
     case PeerClosed =>
       initiateStop(PeerClosed)
     case ChildFinished =>
@@ -79,5 +83,9 @@ class ProtocolMonitor(protocol: Protocol, connection: ActorRef, consumer: ActorR
 
   def stopSelf() = {
     self ! PoisonPill
+  }
+
+  override def preStart() = {
+    self ! Initiation
   }
 }
