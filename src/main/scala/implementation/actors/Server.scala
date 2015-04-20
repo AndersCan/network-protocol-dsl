@@ -6,7 +6,7 @@ import akka.actor.{Actor, Props}
 import akka.io.{IO, Tcp}
 import com.protocoldsl.actors.ProtocolMonitor
 import com.protocoldsl.protocol.{Branch, ProtocolBuilder, Validator}
-import implementation.actors.children.{DiffieHellman, MulOrEcho}
+import implementation.actors.children.{IsInt, MulOrEcho}
 
 /**
  * Created by anders on 04/03/15.
@@ -21,24 +21,18 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
   import akka.io.Tcp._
   import context.system
 
-  IO(Tcp) ! Bind(self, inetSocketAddress)
-
-  val isAnything = new Validator(_ => Right(true))
+  val isAnything = new Validator(in => Right(in))
   val nothing = new Validator(_ => Left("Nothing will always give a Left()"))
 
   val isInt = new Validator(x => try {
-    println("This must be an Int")
-    x.toInt
-    Right(true)
+    Right(IsInt(x.toInt))
   } catch {
     case e: Exception =>
       Left("msg breaks protocol. not int")
   })
 
   val isDouble = new Validator(x => try {
-    // Remove \n from end of line
-    x.toDouble
-    Right(true)
+    Right(x.toDouble)
   } catch {
     case e: Exception =>
       Left("msg breaks protocol. not double")
@@ -48,8 +42,7 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
     val maybePrime: BigInt = BigInt(input.toString)
     println(maybePrime)
     val result = com.protocoldsl.crypto.Helper.fermat(maybePrime)
-    println(result)
-    if (result) Right(true)
+    if (result) Right(maybePrime)
     else Left("Not prime")
   } catch {
     case e: Exception =>
@@ -61,7 +54,7 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
   implicit val server = new ProtocolBuilder()
 
   val mulServer =
-    server receive isInt receive isInt send isAnything looped(1, server receive isAnything loop())
+    server receive isInt receive isInt send isAnything loop()
 
   val echoServer = ProtocolBuilder.loop(
     server receive isAnything send isAnything
@@ -73,7 +66,6 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
   )
 
   val branching = ProtocolBuilder() branchOn mulOrEchoTest
-
 
   //Diffie
   val diffi = server receive isPrime send isDouble receive isDouble looped(0, server receive isAnything send isAnything loop())
@@ -94,11 +86,16 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
 
     case cu@Connected(remote, local) =>
       println(s"New Connection: remote: $remote, local: $local")
-      val proto = echoServer.compile
-      val child = context.actorOf(MulOrEcho.props())
+      val proto = branching.compile
+      val consumer = context.actorOf(MulOrEcho.props())
       // Sender() is sender of the current message
       val connection = sender()
-      val handler = context.actorOf(ProtocolMonitor.props(proto, connection, child))
+      val handler = context.actorOf(ProtocolMonitor.props(proto, connection, consumer))
       connection ! Register(handler)
   }
+
+  override def preStart(): Unit = {
+    IO(Tcp) ! Bind(self, inetSocketAddress)
+  }
+
 }

@@ -4,7 +4,7 @@ package com.protocoldsl.protocol
  * Created by aoc4 on 05/03/15.
  */
 
-sealed case class Validator(f: String => Either[String, Boolean])
+sealed case class Validator(f: String => Either[String, Any])
 
 
 abstract class MessageType() {
@@ -20,7 +20,6 @@ case class Loop(pb: ProtocolBuilder, loops: Int = -1, next: ProtocolBuilder = Pr
 case class Branch(branch: String => ProtocolBuilder, v: Validator = new Validator(_ => Left("validate ran on Branch step"))) extends MessageType()
 
 case class END(v: Validator = new Validator(_ => Left("validate run on END step"))) extends MessageType()
-
 
 
 object ProtocolBuilder {
