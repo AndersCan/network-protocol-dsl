@@ -47,15 +47,15 @@ class DiffieHellman extends Actor {
           println(s"Received PubKey: $receivedValue")
           sharedSecret = scala.math.pow(receivedValue, privateKey) % prime
           println(s"Shared Secret: ($receivedValue^$privateKey) % $prime")
-          println(s"Shared Secret: $sharedSecret")
+          println(s"Shared Secret: ${sharedSecret.toString}")
           textEncryptor.setPassword(sharedSecret.toString)
           currentStep = "secured"
         case "secured" =>
-          val encrypted = textEncryptor.encrypt(data.toString)
-          //          println(s"Encrypted is $encrypted")
-          //          println(s"Secret message is ${textEncryptor.decrypt(encrypted)}")
-          //          println(s"sec: $sharedSecret")
-          sender() ! SendToConnection(ByteString.fromString("server reply\r\n"))
+          //          val encrypted = textEncryptor.encrypt(data.toString)
+          println(s"Encrypted message is ${data.toString}")
+          println(s"Secret message is ${textEncryptor.decrypt(data.toString)}")
+        //          println(s"sec: $sharedSecret")
+        //          sender() ! SendToConnection(ByteString.fromString("server reply\r\n"))
         case _ => println(s"We got an unknown message: $data")
       }
 

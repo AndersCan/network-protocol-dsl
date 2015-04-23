@@ -25,21 +25,21 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
   val nothing = new Validator(_ => Left("Nothing will always give a Left()"))
 
   val isInt = new Validator(x => try {
-    Right(IsInt(x.toInt))
+    Right(IsInt(x.dropRight(2).toInt))
   } catch {
     case e: Exception =>
       Left("msg breaks protocol. not int")
   })
 
   val isDouble = new Validator(x => try {
-    Right(x.toDouble)
+    Right(x.dropRight(2).toDouble)
   } catch {
     case e: Exception =>
       Left("msg breaks protocol. not double")
   })
 
   val isPrime = new Validator(input => try {
-    val maybePrime: BigInt = BigInt(input.toString)
+    val maybePrime: BigInt = BigInt(input.toString.dropRight(2))
     val result = com.protocoldsl.crypto.Helper.fermat(maybePrime)
     if (result) Right(input.toDouble)
     else Left("Not prime")
@@ -49,7 +49,10 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
       Left("msg breaks protocol. not Prime")
   })
 
-
+  // Erlang concurrency model/patterns - network application tocols : struct proure of http, dns. Transport Layer Security, SSL
+  // concurrent protocol/programming patterns
+  // implement kerberos. modularity. optional actors
+  // Secure ChatRoom
   // TODO - How to add multiple communication channels? {S :: C :: C}
   implicit val server = new ProtocolBuilder()
 

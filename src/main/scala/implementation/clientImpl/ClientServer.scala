@@ -34,7 +34,7 @@ class ClientServer(remoteHost: InetSocketAddress) extends Actor {
   })
 
   val isDouble = new Validator(x => try {
-    Right(x.toDouble)
+    Right(x.dropRight(2).toDouble)
   } catch {
     case e: Exception =>
       Left("msg breaks protocol. not double")

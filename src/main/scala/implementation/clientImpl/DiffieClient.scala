@@ -2,7 +2,7 @@ package implementation.clientImpl
 
 import akka.actor._
 import akka.util.ByteString
-import com.protocoldsl.actors.{Initiation, SendToConnection, ToChildMessage}
+import com.protocoldsl.actors._
 import org.jasypt.util.text.BasicTextEncryptor
 
 /**
@@ -53,20 +53,25 @@ class DiffieClient() extends Actor {
       sender() ! SendToConnection(ByteString.fromString(myPublicKey.toString))
       sharedSecret = scala.math.pow(receivedValue, privateKey) % prime
       println(s"Shared Secret: ($receivedValue^$privateKey) % $prime")
-      println(s"Shared Secret: $sharedSecret")
+      println(s"Shared Secret: ${sharedSecret.toString}")
       textEncryptor.setPassword(sharedSecret.toString)
       context become secureCom
       // Start sending something
       self.tell(currentStep, sender())
+      println("Hello....")
   }
 
   def secureCom: Receive = {
+    case ProtocolFailure => sender() ! ChildFinished
     case _ =>
-      sender() ! SendToConnection(sec("Hello From Client -- Secure Communication"))
+      val encrypted = sec("Hello From Client -- Secure Communication")
+      //      println(encrypted)
+      println(encrypted.utf8String)
+      sender() ! SendToConnection(encrypted)
     //      println(s"sec: $sharedSecret")
   }
 
   def sec(in: String): ByteString = {
-    ByteString.fromString(textEncryptor.encrypt(in))
+    ByteString.fromString(textEncryptor.encrypt(in + "\n"))
   }
 }

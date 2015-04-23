@@ -48,7 +48,7 @@ class ProtocolMonitor(protocol: Protocol, connection: ActorRef, consumer: ActorR
     case Received(data) =>
       // Todo - Stop dropping new line characters?
       // Remove \n from end of line
-      val msg = protocol.validateReceivedMessage(data.utf8String.dropRight(2))
+      val msg = protocol.validateReceivedMessage(data.utf8String)
       if (msg.isRight) {
         consumer ! ToChildMessage(msg.right.get)
       } else {
