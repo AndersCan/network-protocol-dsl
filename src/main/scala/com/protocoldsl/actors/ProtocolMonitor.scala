@@ -68,7 +68,7 @@ class ProtocolMonitor(protocol: Protocol, connection: ActorRef, consumer: ActorR
   }
 
   def initiateStop(err: Any) = {
-    println(s"Initiate stop: $err")
+    //println(s"Initiate stop: $err")
     context become waitingForShutdown
     consumer ! ProtocolFailure(err)
   }
@@ -78,7 +78,7 @@ class ProtocolMonitor(protocol: Protocol, connection: ActorRef, consumer: ActorR
       connection ! Write(data)
     case ChildFinished =>
       stopSelf()
-    case _ => println("Ignoring received msg")
+    case _ => //println("Ignoring received msg")
   }
 
   def stopSelf() = {

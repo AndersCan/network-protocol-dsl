@@ -6,7 +6,7 @@ import akka.actor.{Actor, Props}
 import akka.io.{IO, Tcp}
 import com.protocoldsl.actors.ProtocolMonitor
 import com.protocoldsl.protocol.{Branch, ProtocolBuilder, Validator}
-import implementation.actors.children.{DiffieHellman, IsInt}
+import implementation.actors.children.{IsInt, MulOrEcho}
 
 /**
  * Created by anders on 04/03/15.
@@ -89,8 +89,8 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
 
     case cu@Connected(remote, local) =>
       println(s"New Connection: remote: $remote, local: $local")
-      val proto = diffie.compile
-      val consumer = context.actorOf(DiffieHellman.props())
+      val proto = echoServer.compile
+      val consumer = context.actorOf(MulOrEcho.props())
       // Sender() is sender of the current message
       val connection = sender()
       val handler = context.actorOf(ProtocolMonitor.props(proto, connection, consumer))

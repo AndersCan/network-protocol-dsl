@@ -1,10 +1,10 @@
-package actors
+package actors.ProtocolMonitor
 
 import akka.actor.ActorSystem
-import akka.io.Tcp.{Write, Received}
+import akka.io.Tcp.{Received, Write}
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import akka.util.ByteString
-import com.protocoldsl.actors.{ProtocolMonitor, SendToConnection, ProtocolMonitor$, ToChildMessage}
+import com.protocoldsl.actors._
 import com.protocoldsl.protocol.{ProtocolBuilder, Validator}
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
@@ -21,7 +21,7 @@ class ProtocolMonitorTests(_system: ActorSystem) extends TestKit(_system) with I
   }
 
 
-  val isAnything = new Validator(_ => Right(true))
+  val isAnything = new Validator(x => Right(x))
   val isNothing = new Validator(_ => Left("isNothing will always give a Left result"))
   val simpleMessage = ByteString.fromString("Simple message")
 
@@ -33,7 +33,7 @@ class ProtocolMonitorTests(_system: ActorSystem) extends TestKit(_system) with I
       val handler = system.actorOf(ProtocolMonitor.props(proto, connection.ref, child.ref))
 
       handler ! Received(simpleMessage)
-      child expectMsg(5000.millis, ToChildMessage(simpleMessage))
+      child expectMsg(5000.millis, ToChildMessage("Simple message"))
     }
   }
   it must {
@@ -42,9 +42,8 @@ class ProtocolMonitorTests(_system: ActorSystem) extends TestKit(_system) with I
       val connection = TestProbe()
       val proto = (new ProtocolBuilder() send isNothing).compile
       val handler = system.actorOf(ProtocolMonitor.props(proto, connection.ref, child.ref))
-
       handler ! Received(simpleMessage)
-      child expectNoMsg 2000.millis
+      child expectMsgClass(5000.millis, ProtocolFailure("").getClass)
     }
   }
   it must {
