@@ -68,7 +68,7 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
   val branching = ProtocolBuilder() branchOn mulOrEchoTest
 
   //Diffie
-  val diffieProtocol = server receive isPrime send isDouble receive isDouble looped(0, server receive isAnything send isAnything loop())
+  val diffieProtocol = server receive isPrime send isDouble receive isDouble looped(0, server anyone isAnything loop())
 
   //    c send(s, isPrime) // sends prime
   //    s send(c, isDouble) // sends shared secret

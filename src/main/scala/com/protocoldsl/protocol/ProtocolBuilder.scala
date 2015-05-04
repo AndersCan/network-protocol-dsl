@@ -15,6 +15,8 @@ case class Send(v: Validator) extends MessageType()
 
 case class Receive(v: Validator) extends MessageType()
 
+case class Anyone(v: Validator) extends MessageType()
+
 case class Loop(pb: ProtocolBuilder, loops: Int = -1, next: ProtocolBuilder = ProtocolBuilder().end, v: Validator = new Validator(_ => Left("validate run on Loop step"))) extends MessageType()
 
 case class Branch(branch: String => ProtocolBuilder, v: Validator = new Validator(_ => Left("validate ran on Branch step"))) extends MessageType()
@@ -104,6 +106,15 @@ class ProtocolBuilder(val states: List[MessageType]) {
     this addState branch
   }
 
+  /**
+   * Allows messages to be sent where the order of messages does not matter.
+   * @param v validates expected message
+   * @return new ProtocolBuilder with Anyone(v) appended.
+   */
+  def anyone(v: Validator): ProtocolBuilder = {
+    this addState Anyone(v)
+  }
+
 
   // Must append to list.
   private def addState(m: MessageType): ProtocolBuilder = {
@@ -135,6 +146,7 @@ class Protocol(var protocolStates: List[MessageType]) {
     val msgType: MessageType = getMessageType(input)
 
     msgType match {
+      case Anyone(v) => msgType.v.f(input)
       case Receive(v) =>
         Left("protocol violated - sending when should be receiving")
       case _ => msgType.v.f(input)
@@ -145,6 +157,7 @@ class Protocol(var protocolStates: List[MessageType]) {
     val msgType: MessageType = getMessageType(input)
 
     msgType match {
+      case Anyone(v) => msgType.v.f(input)
       case Send(v) =>
         Left("protocol violated - receiving when should be sending")
       case _ => msgType.v.f(input)

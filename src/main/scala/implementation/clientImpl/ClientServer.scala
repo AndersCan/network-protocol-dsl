@@ -42,7 +42,7 @@ class ClientServer(remoteHost: InetSocketAddress) extends Actor {
 
   val isAnything = new Validator(in => Right(in))
 
-  val secureCom = ProtocolBuilder() send isAnything receive isAnything loop()
+  val secureCom = ProtocolBuilder() anyone isAnything loop()
 
   val diffieClient = ProtocolBuilder() send isPrime receive isDouble send isDouble next secureCom
 

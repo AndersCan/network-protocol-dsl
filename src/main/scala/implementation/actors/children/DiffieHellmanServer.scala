@@ -54,6 +54,7 @@ class DiffieHellmanServer extends Actor {
       println(s"Shared Secret: ${sharedSecret.toString}")
       textEncryptor.setPassword(sharedSecret.toString)
       context become Secure
+      self.tell(ToChildMessage(textEncryptor.encrypt("hello")), sender())
     case err@_ => failure(err)
   }
 
