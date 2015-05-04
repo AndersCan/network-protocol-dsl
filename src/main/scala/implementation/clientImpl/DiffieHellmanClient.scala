@@ -9,16 +9,16 @@ import org.jasypt.util.text.BasicTextEncryptor
  * Created by anders on 16/04/15.
  */
 
-object DiffieClient {
+object DiffieHellmanClient {
   def props() =
-    Props(classOf[DiffieClient])
+    Props(classOf[DiffieHellmanClient])
 }
 
-class DiffieClient() extends Actor {
+class DiffieHellmanClient() extends Actor {
 
   val prime: Double = BigInt.probablePrime(8, scala.util.Random).toDouble
   //  val prime = 23.0
-  val generator = 5.0
+  val generator = 2.0
   // Generate a random Integer
   val privateKey = math.abs(scala.util.Random.nextInt(10) + 1)
   //  val privateKey = 6
@@ -34,9 +34,9 @@ class DiffieClient() extends Actor {
     case Initiation =>
       // send prime
       println(s"PrivateKey: $privateKey")
-      println(s"Sending prime: $prime")
+      println(s"Sending prime: $prime and generator $generator")
       //      sender() ! SendToConnection(ByteString.fromString(prime.toString))
-      sender() ! SendToConnection(ByteString.fromString(prime.toString))
+      sender() ! SendToConnection(ByteString.fromString(s"$prime,$generator"))
       currentStep = "pubkey"
       // wait for pubkey
       context become waitingForPubkey

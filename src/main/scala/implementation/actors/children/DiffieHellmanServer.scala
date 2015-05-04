@@ -9,16 +9,16 @@ import org.jasypt.util.text.BasicTextEncryptor
  * Created by aoc4 on 23/03/15.
  */
 
-object DiffieHellman {
-  def props() = Props(classOf[DiffieHellman])
+object DiffieHellmanServer {
+  def props() = Props(classOf[DiffieHellmanServer])
 
 
 }
 
-class DiffieHellman extends Actor {
+class DiffieHellmanServer extends Actor {
 
   var prime = 0.0
-  val generator = 5.0
+  val generator = 0.0
   // Generate a random Integer
   val privateKey = math.abs(scala.util.Random.nextInt(10) + 1)
   //  val privateKey = 15
