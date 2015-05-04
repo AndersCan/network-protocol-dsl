@@ -6,7 +6,7 @@ import akka.actor.{Actor, Props}
 import akka.io.{IO, Tcp}
 import com.protocoldsl.actors.ProtocolMonitor
 import com.protocoldsl.protocol.{Branch, ProtocolBuilder, Validator}
-import implementation.actors.children.{IsInt, MulOrEcho}
+import implementation.actors.children.{DiffieHellmanServer, IsInt}
 
 /**
  * Created by anders on 04/03/15.
@@ -49,10 +49,7 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
       Left("msg breaks protocol. not Prime")
   })
 
-  // Erlang concurrency model/patterns - network application tocols : struct proure of http, dns. Transport Layer Security, SSL
-  // concurrent protocol/programming patterns
-  // implement kerberos. modularity. optional actors
-  // Secure ChatRoom
+
   // TODO - How to add multiple communication channels? {S :: C :: C}
   implicit val server = new ProtocolBuilder()
 
@@ -71,7 +68,7 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
   val branching = ProtocolBuilder() branchOn mulOrEchoTest
 
   //Diffie
-  val diffie = server receive isPrime send isDouble receive isDouble looped(0, server receive isAnything send isAnything loop())
+  val diffieProtocol = server receive isPrime send isDouble receive isDouble looped(0, server receive isAnything send isAnything loop())
 
   //    c send(s, isPrime) // sends prime
   //    s send(c, isDouble) // sends shared secret
@@ -89,8 +86,8 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
 
     case cu@Connected(remote, local) =>
       println(s"New Connection: remote: $remote, local: $local")
-      val proto = echoServer.compile
-      val consumer = context.actorOf(MulOrEcho.props())
+      val proto = diffieProtocol.compile
+      val consumer = context.actorOf(DiffieHellmanServer.props())
       // Sender() is sender of the current message
       val connection = sender()
       val handler = context.actorOf(ProtocolMonitor.props(proto, connection, consumer))

@@ -55,7 +55,7 @@ class ClientServer(remoteHost: InetSocketAddress) extends Actor {
     case cu@Connected(remote, local) =>
       println(s"New Connection: remote: $remote, local: $local")
       val proto = diffieClient.compile
-      val consumer = context.actorOf(DiffieClient.props())
+      val consumer = context.actorOf(DiffieHellmanClient.props())
       // Sender() is sender of the current message
       val connection = sender()
       val pm = context.actorOf(ProtocolMonitor.props(proto, connection, consumer))

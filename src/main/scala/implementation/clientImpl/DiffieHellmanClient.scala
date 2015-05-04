@@ -34,12 +34,13 @@ class DiffieHellmanClient() extends Actor {
     case Initiation =>
       // send prime
       println(s"PrivateKey: $privateKey")
-      println(s"Sending prime: $prime and generator $generator")
+      println(s"Sending prime: $prime")
       //      sender() ! SendToConnection(ByteString.fromString(prime.toString))
-      sender() ! SendToConnection(ByteString.fromString(s"$prime,$generator"))
+      sender() ! SendToConnection(ByteString.fromString(s"$prime"))
       currentStep = "pubkey"
       // wait for pubkey
       context become waitingForPubkey
+    case ProtocolFailure => sender() ! ChildFinished
     case _ =>
       println("Unknown message...")
   }
@@ -57,18 +58,29 @@ class DiffieHellmanClient() extends Actor {
       textEncryptor.setPassword(sharedSecret.toString)
       context become secureCom
       // Start sending something
-      self.tell(currentStep, sender())
+      self.tell("START", sender())
       println("Hello....")
+    case err@_ => failure(err)
   }
 
   def secureCom: Receive = {
-    case ProtocolFailure => sender() ! ChildFinished
-    case _ =>
+    case "START" => sender() ! SendToConnection(sec("Starting communication..."))
+    case ToChildMessage(data) =>
       val encrypted = sec("Hello From Client -- Secure Communication")
       //      println(encrypted)
       println(encrypted.utf8String)
       sender() ! SendToConnection(encrypted)
     //      println(s"sec: $sharedSecret")
+    case err@_ => failure(err)
+  }
+
+  def failure(msg: Any) = msg match {
+    case ProtocolFailure(err) =>
+      // Protocol has been ended. End self then tell parent
+      println(err)
+      sender() ! ChildFinished
+
+    case unknown@_ => println(s"unknown message: $unknown")
   }
 
   def sec(in: String): ByteString = {

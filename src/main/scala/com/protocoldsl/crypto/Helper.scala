@@ -28,9 +28,15 @@ object Helper {
    * Test whether given value is holds true to Fermats Little Theorem, if true: p is declared probably prime. IE. Not guaranteed to be correct.
    * Range of a is 1 to 10
    */
-  def fermat(p: BigInt): Boolean = {
-    val a = BigInt(1 + (scala.math.random * 10).toInt)
-    (pow(a, p) - a) % p == ZERO
+  def fermat(p: BigInt, repeats: Int = 100): Boolean = {
+    var i = 0
+    while (i < repeats) {
+      val a = BigInt(1 + (scala.math.random * 10).toInt)
+      if ((pow(a, p) - a) % p != ZERO) return false
+
+      i = i + 1
+    }
+    true
   }
 
 }
