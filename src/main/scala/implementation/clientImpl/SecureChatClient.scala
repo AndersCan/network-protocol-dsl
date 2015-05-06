@@ -26,7 +26,6 @@ class SecureChatClient() extends Actor {
 
   var sharedSecret = 0.0 // only A and B knows this
 
-  var currentStep = "START"
 
   val textEncryptor = new BasicTextEncryptor()
 
@@ -35,17 +34,14 @@ class SecureChatClient() extends Actor {
       // send prime
       println(s"PrivateKey: $privateKey")
       println(s"Sending prime: $prime")
-      //      sender() ! SendToConnection(ByteString.fromString(prime.toString))
       sender() ! SendToConnection(ByteString.fromString(s"$prime"))
-      currentStep = "pubkey"
-      // wait for pubkey
-      context become waitingForPubkey
+      context become WaitingForPubkey
     case ProtocolFailure => sender() ! ChildFinished
     case _ =>
       println("Unknown message...")
   }
 
-  def waitingForPubkey: Receive = {
+  def WaitingForPubkey: Receive = {
     case ToChildMessage(data) =>
       val receivedValue = data.asInstanceOf[Double]
       println(s"Received PubKey: $receivedValue")
@@ -56,21 +52,22 @@ class SecureChatClient() extends Actor {
       println(s"Shared Secret: ($receivedValue^$privateKey) % $prime")
       println(s"Shared Secret: ${sharedSecret.toString}")
       textEncryptor.setPassword(sharedSecret.toString)
-      context become secureCom
-      // Start sending something
-      self.tell("START", sender())
-      println("Hello....")
+      // Send username
+      context become ChatRoom
+      val sending = sec(scala.util.Random.nextInt().toString)
+      println(s"Sending: ${sending.utf8String}")
+      sender() ! SendToConnection(sending)
     case err@_ => failure(err)
   }
 
-  def secureCom: Receive = {
-    case "START" => sender() ! SendToConnection(sec("Starting communication..."))
+  def ChatRoom: Receive = {
+    case "START" =>
+      // Register for
+      sender() ! SendToConnection(sec("Starting communication..."))
     case ToChildMessage(data) =>
-      val encrypted = sec("Hello From Client -- Secure Communication")
-      //      println(encrypted)
-      println(encrypted.utf8String)
-      sender() ! SendToConnection(encrypted)
-    //      println(s"sec: $sharedSecret")
+
+      val decrypted = textEncryptor.decrypt(data.toString)
+      println(s"Decrypted message: $decrypted")
     case err@_ => failure(err)
   }
 
@@ -79,11 +76,10 @@ class SecureChatClient() extends Actor {
       // Protocol has been ended. End self then tell parent
       println(err)
       sender() ! ChildFinished
-
     case unknown@_ => println(s"unknown message: $unknown")
   }
 
   def sec(in: String): ByteString = {
-    ByteString.fromString(textEncryptor.encrypt(in + "\n"))
+    ByteString.fromString(textEncryptor.encrypt(in + ""))
   }
 }

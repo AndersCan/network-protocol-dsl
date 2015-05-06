@@ -40,12 +40,36 @@ class ClientServer(remoteHost: InetSocketAddress) extends Actor {
       Left("msg breaks protocol. not double")
   })
 
+  val username = new Validator(x => try {
+    Right(x.dropRight(2))
+  } catch {
+    case e: Exception =>
+      Left("msg breaks protocol. not a username")
+  })
+
+  val usernames = new Validator(x => try {
+    // List of usernames
+    Right(x.dropRight(2))
+  } catch {
+    case e: Exception =>
+      Left("msg breaks protocol. not a username")
+  })
+
   val isAnything = new Validator(in => Right(in))
 
   val secureCom = ProtocolBuilder() anyone isAnything loop()
 
   val diffieClient = ProtocolBuilder() send isPrime receive isDouble send isDouble next secureCom
+  //Diffie Initiation
+  val diffieInit = ProtocolBuilder() send isPrime receive isDouble send isDouble
+  //Diffie Server Chat
+  val diffieProtocol = diffieInit next ProtocolBuilder() anyone isAnything loop()
 
+  //SecureChat
+  // SERVER
+  //val securechatProtocol = diffieInit receive username send usernames receive username next ProtocolBuilder() anyone isAnything loop()
+  //CLIENT
+  val securechatProtocol = diffieInit send username looped(0, ProtocolBuilder() anyone isAnything loop())
 
   def receive = {
     case b@Bound(localAddress) =>
@@ -54,8 +78,8 @@ class ClientServer(remoteHost: InetSocketAddress) extends Actor {
     case CommandFailed(_: Bind) => context stop self
     case cu@Connected(remote, local) =>
       println(s"New Connection: remote: $remote, local: $local")
-      val proto = diffieClient.compile
-      val consumer = context.actorOf(DiffieHellmanClient.props())
+      val proto = securechatProtocol.compile
+      val consumer = context.actorOf(SecureChatClient.props())
       // Sender() is sender of the current message
       val connection = sender()
       val pm = context.actorOf(ProtocolMonitor.props(proto, connection, consumer))

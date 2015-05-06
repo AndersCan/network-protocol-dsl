@@ -6,7 +6,7 @@ import akka.actor.{Actor, Props}
 import akka.io.{IO, Tcp}
 import com.protocoldsl.actors.ProtocolMonitor
 import com.protocoldsl.protocol.{Branch, ProtocolBuilder, Validator}
-import implementation.actors.children.{DiffieHellmanServer, IsInt}
+import implementation.actors.children.{IsInt, SecureChatServer}
 
 /**
  * Created by anders on 04/03/15.
@@ -29,6 +29,26 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
   } catch {
     case e: Exception =>
       Left("msg breaks protocol. not int")
+  })
+
+  val username = new Validator(x => try {
+    println(s"Username: $x")
+    if (x.contains("\n")) {
+      Right(x.dropRight(2))
+    } else {
+      Right(x)
+    }
+  } catch {
+    case e: Exception =>
+      Left("msg breaks protocol. not a username")
+  })
+
+  val usernames = new Validator(x => try {
+    // List of usernames
+    Right(x.dropRight(2))
+  } catch {
+    case e: Exception =>
+      Left("msg breaks protocol. not a username")
   })
 
   val isDouble = new Validator(x => try {
@@ -67,8 +87,15 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
 
   val branching = ProtocolBuilder() branchOn mulOrEchoTest
 
-  //Diffie
-  val diffieProtocol = server receive isPrime send isDouble receive isDouble looped(0, server anyone isAnything loop())
+  //Diffie Initiation
+  val diffieInit = server receive isPrime send isDouble receive isDouble
+  //Diffie Server Chat
+  val diffieProtocol = diffieInit looped(0, server anyone isAnything loop())
+
+  //SecureChat
+  //  val securechatProtocol = diffieInit receive username send usernames receive username next server anyone isAnything loop()
+
+  val securechatProtocol = diffieInit receive username looped(0, server anyone isAnything loop())
 
   //    c send(s, isPrime) // sends prime
   //    s send(c, isDouble) // sends shared secret
@@ -86,8 +113,10 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
 
     case cu@Connected(remote, local) =>
       println(s"New Connection: remote: $remote, local: $local")
-      val proto = diffieProtocol.compile
-      val consumer = context.actorOf(DiffieHellmanServer.props())
+      println(s"New Connection: remote: $remote, local: $local")
+      println(s"New Connection: remote: $remote, local: $local")
+      val proto = securechatProtocol.compile
+      val consumer = context.actorOf(SecureChatServer.props())
       // Sender() is sender of the current message
       val connection = sender()
       val handler = context.actorOf(ProtocolMonitor.props(proto, connection, consumer))

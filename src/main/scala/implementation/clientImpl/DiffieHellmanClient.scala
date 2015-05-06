@@ -26,19 +26,14 @@ class DiffieHellmanClient() extends Actor {
 
   var sharedSecret = 0.0 // only A and B knows this
 
-  var currentStep = "START"
 
   val textEncryptor = new BasicTextEncryptor()
 
   def receive = {
     case Initiation =>
-      // send prime
       println(s"PrivateKey: $privateKey")
       println(s"Sending prime: $prime")
-      //      sender() ! SendToConnection(ByteString.fromString(prime.toString))
       sender() ! SendToConnection(ByteString.fromString(s"$prime"))
-      currentStep = "pubkey"
-      // wait for pubkey
       context become waitingForPubkey
     case ProtocolFailure => sender() ! ChildFinished
     case _ =>
@@ -67,10 +62,8 @@ class DiffieHellmanClient() extends Actor {
     case "START" => sender() ! SendToConnection(sec("Starting communication..."))
     case ToChildMessage(data) =>
       val encrypted = sec("Hello From Client -- Secure Communication")
-      //      println(encrypted)
       println(encrypted.utf8String)
       sender() ! SendToConnection(encrypted)
-    //      println(s"sec: $sharedSecret")
     case err@_ => failure(err)
   }
 

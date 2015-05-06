@@ -80,9 +80,9 @@ class ProtocolBuilder(val states: List[MessageType]) {
   }
 
   /**
-   * Then adds allows two ProtocolBuilder to be combined to one. Basically syntactic sugar for adding a Loop that loops 0 times.
+   * Next allows two ProtocolBuilder to be combined to one. Basically syntactic sugar for adding a Loop that loops 0 times.
    * @param next ProtocolBuilder to be run after first run
-   * @return ProtocolBuilder with 'next' appended
+   * @return ProtocolBuilder with a 'Loop()' appended
    */
   def next(next: ProtocolBuilder): ProtocolBuilder = {
     this addState Loop(this, 0, next)
@@ -167,21 +167,25 @@ class Protocol(var protocolStates: List[MessageType]) {
   // Branch and Looping cases are handled here
   private def getMessageType(input: String): MessageType = {
     //    println(s"States: $protocolStates")
+    if (protocolStates.isEmpty) {
+      println("Empty!")
+    } else {
+      println(s"State: ${protocolStates.head}")
+    }
     protocolStates.head match {
       case branch: Branch =>
         protocolStates = branch.branch(input).compile.protocolStates
         getMessageType(input)
       case Loop(pb, 0, next, _) =>
-        //        println(s"Last Loop")
-        //        println(s"Loop: $protocolStates")
+        // Last Loop
         protocolStates = next.compile.protocolStates
         getMessageType(input)
       case Loop(pb, -1, _, _) =>
-        //        println(s"Infinite loop")
+        // Infinite loop
         protocolStates = pb.loop().compile.protocolStates
         getMessageType(input)
       case Loop(pb, loops, next, _) =>
-        //        println(s"Current loop: $loops")
+        //
         protocolStates = pb.looped(loops - 1, next).compile.protocolStates
         getMessageType(input)
       case msg: MessageType =>
