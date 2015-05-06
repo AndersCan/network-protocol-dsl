@@ -3,12 +3,12 @@ package implementation.clientImpl
 import akka.actor._
 import akka.util.ByteString
 import com.protocoldsl.actors._
+import implementation.actors.children.{ChatMessage, NewUser}
 import org.jasypt.util.text.BasicTextEncryptor
 
 /**
  * Created by anders on 16/04/15.
  */
-
 object SecureChatClient {
   def props() =
     Props(classOf[SecureChatClient])
@@ -61,13 +61,15 @@ class SecureChatClient() extends Actor {
   }
 
   def ChatRoom: Receive = {
-    case "START" =>
-      // Register for
-      sender() ! SendToConnection(sec("Starting communication..."))
     case ToChildMessage(data) =>
-
-      val decrypted = textEncryptor.decrypt(data.toString)
-      println(s"Decrypted message: $decrypted")
+      getChatMessageType(data.toString) match {
+        case NewUser(username) =>
+          val decrypted = textEncryptor.decrypt(username)
+          println(s"Decrypted username: $decrypted")
+        case ChatMessage(msg) =>
+          val decrypted = textEncryptor.decrypt(msg)
+          println(s"Decrypted message: $decrypted")
+      }
     case err@_ => failure(err)
   }
 
@@ -77,6 +79,19 @@ class SecureChatClient() extends Actor {
       println(err)
       sender() ! ChildFinished
     case unknown@_ => println(s"unknown message: $unknown")
+  }
+
+  // TODO Create Parent case class for chat message
+  def getChatMessageType(msg: String): Any = {
+    println(s"Msg Received: $msg")
+    val split = msg.split(";")
+    split(0) match {
+      case "username" =>
+        NewUser(split(1))
+      case "message" =>
+        ChatMessage(split(1))
+      case _ => Left("Unexpected ChatMessage received")
+    }
   }
 
   def sec(in: String): ByteString = {

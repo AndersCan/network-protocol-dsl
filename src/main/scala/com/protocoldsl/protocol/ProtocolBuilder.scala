@@ -79,6 +79,7 @@ class ProtocolBuilder(val states: List[MessageType]) {
     this addState Loop(this, loops, after)
   }
 
+  // TODO - Next does not work as intended. Generates an empty head
   /**
    * Next allows two ProtocolBuilder to be combined to one. Basically syntactic sugar for adding a Loop that loops 0 times.
    * @param next ProtocolBuilder to be run after first run
@@ -167,11 +168,6 @@ class Protocol(var protocolStates: List[MessageType]) {
   // Branch and Looping cases are handled here
   private def getMessageType(input: String): MessageType = {
     //    println(s"States: $protocolStates")
-    if (protocolStates.isEmpty) {
-      println("Empty!")
-    } else {
-      println(s"State: ${protocolStates.head}")
-    }
     protocolStates.head match {
       case branch: Branch =>
         protocolStates = branch.branch(input).compile.protocolStates
@@ -185,7 +181,6 @@ class Protocol(var protocolStates: List[MessageType]) {
         protocolStates = pb.loop().compile.protocolStates
         getMessageType(input)
       case Loop(pb, loops, next, _) =>
-        //
         protocolStates = pb.looped(loops - 1, next).compile.protocolStates
         getMessageType(input)
       case msg: MessageType =>
@@ -195,12 +190,4 @@ class Protocol(var protocolStates: List[MessageType]) {
         sys.error("unknown message type received in Protocol")
     }
   }
-
-  // TODO Implement end
-  //  def protocolFinished(): Boolean = {
-  //    protocolStates.head match {
-  //      case END => true
-  //      case _ => false
-  //    }
-  //  }
 }
