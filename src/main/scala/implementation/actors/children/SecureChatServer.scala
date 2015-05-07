@@ -8,9 +8,16 @@ import org.jasypt.util.text.BasicTextEncryptor
 /**
  * Created by aoc4 on 23/03/15.
  */
+
+
+
 case class NewUser(username: String)
 
-case class ChatMessage(message: String)
+case class SecureComInit(username: String, message: String)
+
+case class ChatMessage(username: Integer, message: String)
+
+case class DiffieInit(prime: Double)
 
 object SecureChatServer {
   def props() = Props(classOf[SecureChatServer])
@@ -28,6 +35,8 @@ class SecureChatServer extends Actor {
   var sharedSecret = 0.0 // only A and B knows this
 
   val textEncryptor = new BasicTextEncryptor()
+
+  var username = ""
 
   var pm: ActorRef = null
 
@@ -65,22 +74,47 @@ class SecureChatServer extends Actor {
 
   def WaitingForUserName: Receive = {
     case ToChildMessage(data) =>
-      println(data.toString)
-      val username = textEncryptor.decrypt(data.toString)
+      // username;<value>
+      username = textEncryptor.decrypt(data.toString).split(';')(1)
+
       println(s"Connected user is $username")
       context.system.eventStream.publish(NewUser(username))
       context become ChatRoom
       context.system.eventStream.subscribe(self, classOf[NewUser])
+      context.system.eventStream.subscribe(self, classOf[SecureComInit])
+      context.system.eventStream.subscribe(self, classOf[ChatMessage])
     case err@_ => failure(err)
   }
 
+  // React to published and received events
   def ChatRoom: Receive = {
-    case NewUser(username) =>
+    case NewUser(name) =>
       // a new user has joined
-      pm ! SendToConnection(sec(s"$username", "username;"))
+      pm ! SendToConnection(sec("username;" + name))
+    case ChatMessage(name, message) =>
+      println(s"Sending message RIGHT: $name;$message to user $username")
+      pm ! SendToConnection(sec(s"$name;$message"))
+    case SecureComInit(name, message) =>
+      if (username != name) {
+        println(s"Sending message WRONG: $message to user $username")
+        pm ! SendToConnection(sec(message))
+      }
+
     case ToChildMessage(data) =>
-      println(s"Secret message is ${textEncryptor.decrypt(data.toString)}")
-    //      sender() ! SendToConnection(ByteString.fromString("server reply\r\n"))
+      // TODO Cleanup of sending messages, wasteful split. Perhaps swap to JSON
+      val decrypt: String = textEncryptor.decrypt(data.toString)
+      println(s"Secret message is $decrypt")
+      if (decrypt.contains(";diffie;")) {
+        // <username>;diffie;<msg>
+        val split = decrypt.split(";diffie;")
+        context.system.eventStream.publish(SecureComInit(split(0), "diffie;" + split(1)))
+      } else if (decrypt.contains(";pubkey;")) {
+        val split = decrypt.split(";pubkey;")
+        context.system.eventStream.publish(SecureComInit(split(0), "pubkey;" + split(1)))
+      } else {
+        val split = decrypt.split(";")
+        context.system.eventStream.publish(SecureComInit(split(0), split(1)))
+      }
     case err@_ => failure(err)
   }
 
@@ -90,13 +124,11 @@ class SecureChatServer extends Actor {
       println(err)
       context.system.eventStream.unsubscribe(self)
       sender() ! ChildFinished
-
     case unknown@_ => println(s"unknown message: $unknown")
   }
 
-  def sec(in: String, header: String = ""): ByteString = {
-    println("Here!: " + header + textEncryptor.encrypt(in + ""))
-    ByteString.fromString(header + textEncryptor.encrypt(in + ""))
+  def sec(in: String): ByteString = {
+    ByteString.fromString(textEncryptor.encrypt(in + ""))
   }
 }
 

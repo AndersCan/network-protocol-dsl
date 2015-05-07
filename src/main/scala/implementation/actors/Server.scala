@@ -32,7 +32,6 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
   })
 
   val username = new Validator(x => try {
-    println(s"Username: $x")
     if (x.contains("\n")) {
       Right(x.dropRight(2))
     } else {
@@ -43,16 +42,12 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
       Left("msg breaks protocol. not a username")
   })
 
-  val usernames = new Validator(x => try {
-    // List of usernames
-    Right(x.dropRight(2))
-  } catch {
-    case e: Exception =>
-      Left("msg breaks protocol. not a username")
-  })
-
   val isDouble = new Validator(x => try {
-    Right(x.dropRight(2).toDouble)
+    if (x.contains("\n")) {
+      Right(x.dropRight(2).toDouble)
+    } else {
+      Right(x.toDouble)
+    }
   } catch {
     case e: Exception =>
       Left("msg breaks protocol. not double")

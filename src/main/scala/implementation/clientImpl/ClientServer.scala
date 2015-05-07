@@ -6,7 +6,7 @@ import akka.actor.{Actor, Props}
 import akka.io.{IO, Tcp}
 import com.protocoldsl.actors.ProtocolMonitor
 import com.protocoldsl.protocol.{ProtocolBuilder, Validator}
-import implementation.actors.children.{ChatMessage, NewUser}
+import implementation.actors.children.{SecureComInit, NewUser}
 
 /**
  * Created by anders on 20/04/15.
@@ -59,20 +59,20 @@ class ClientServer(remoteHost: InetSocketAddress) extends Actor {
   val isAnything = new Validator(in => Right(in))
 
 
-  val chatMessage = new Validator(msg => try {
-    println(s"Message: $msg")
-    val split = msg.split(";")
-    split(0) match {
-      case "username" =>
-        Right(NewUser(split(1)))
-      case "message" =>
-        Right(ChatMessage(split(1)))
-      case _ => Left("Unexpected ChatMessage received")
-    }
-  } catch {
-    case e: Exception =>
-      Left(s"msg breaks protocol. Exception caught $e")
-  })
+//  val chatMessage = new Validator(msg => try {
+//    println(s"Message: $msg")
+//    val split = msg.split(";")
+//    split(0) match {
+//      case "username" =>
+//        Right(NewUser(split(1)))
+//      case "message" =>
+//        Right(ChatMessage(split(1)))
+//      case _ => Left("Unexpected ChatMessage received")
+//    }
+//  } catch {
+//    case e: Exception =>
+//      Left(s"msg breaks protocol. Exception caught $e")
+//  })
 
 
   val secureCom = ProtocolBuilder() anyone isAnything loop()
