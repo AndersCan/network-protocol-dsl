@@ -104,17 +104,17 @@ class SecureChatServer extends Actor {
     case ToChildMessage(data) =>
       // TODO Cleanup of sending messages, wasteful split. Perhaps swap to JSON
       val decrypt: String = textEncryptor.decrypt(data.toString)
-      println(s"Secret message is $decrypt")
+      //      println(s"Secret message is $decrypt")
       context.system.eventStream.publish(decrypt)
     case input: String =>
       println(s"Raw: $input")
       val json = parse(input)
-      println(s"Json: $json")
+      //      println(s"Json: $json")
       implicit val formats = DefaultFormats
       val to = (json \ "to").extract[String]
-      println(s"To: $to")
+      //      println(s"To: $to")
       if (to == username || to == "ALL") {
-        println("Sending...")
+        //        println("Sending...")
         pm ! SendToConnection(sec(input))
       }
     //      val json = parse(decrypt)

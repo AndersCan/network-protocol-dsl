@@ -17,3 +17,5 @@ libraryDependencies ++= Seq(
   "org.jasypt" % "jasypt" % "1.9.2",
   "net.liftweb" %% "lift-json" % "2.6"
 )
+
+enablePlugins(JavaAppPackaging)
