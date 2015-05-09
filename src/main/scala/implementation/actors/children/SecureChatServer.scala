@@ -3,19 +3,22 @@ package implementation.actors.children
 import akka.actor.{Actor, ActorRef, Props}
 import akka.util.ByteString
 import com.protocoldsl.actors._
+import net.liftweb.json._
 import org.jasypt.util.text.BasicTextEncryptor
 
 /**
  * Created by aoc4 on 23/03/15.
  */
 
+case class ChatMessage(from: String, to: String, msg: String)
 
+case class SecureInit(from: String, header: String, number: Double)
+
+case class ConnectedUsers(users: List[String])
 
 case class NewUser(username: String)
 
 case class SecureComInit(username: String, message: String)
-
-case class ChatMessage(username: Integer, message: String)
 
 case class DiffieInit(prime: Double)
 
@@ -76,45 +79,55 @@ class SecureChatServer extends Actor {
     case ToChildMessage(data) =>
       // username;<value>
       username = textEncryptor.decrypt(data.toString).split(';')(1)
-
       println(s"Connected user is $username")
-      context.system.eventStream.publish(NewUser(username))
+      context.system.eventStream.publish( s""" { "token" : "NewUser", "to": "ALL", "from" : "$username" } """)
       context become ChatRoom
-      context.system.eventStream.subscribe(self, classOf[NewUser])
-      context.system.eventStream.subscribe(self, classOf[SecureComInit])
-      context.system.eventStream.subscribe(self, classOf[ChatMessage])
+      context.system.eventStream.subscribe(self, classOf[String])
+    //      context.system.eventStream.subscribe(self, classOf[SecureComInit])
+    //      context.system.eventStream.subscribe(self, classOf[ChatMessage])
     case err@_ => failure(err)
   }
 
   // React to published and received events
   def ChatRoom: Receive = {
-    case NewUser(name) =>
-      // a new user has joined
-      pm ! SendToConnection(sec("username;" + name))
-    case ChatMessage(name, message) =>
-      println(s"Sending message RIGHT: $name;$message to user $username")
-      pm ! SendToConnection(sec(s"$name;$message"))
-    case SecureComInit(name, message) =>
-      if (username != name) {
-        println(s"Sending message WRONG: $message to user $username")
-        pm ! SendToConnection(sec(message))
-      }
-
+    //    case NewUser(name) =>
+    //      // a new user has joined
+    //      pm ! SendToConnection(sec("username;" + name))
+    //    case ChatMessage(name, message) =>
+    //      println(s"Sending message RIGHT: $name;$message to user $username")
+    //      pm ! SendToConnection(sec(s"$name;$message"))
+    //    case SecureComInit(name, message) =>
+    //      if (username != name) {
+    //        println(s"Sending message WRONG: $message to user $username")
+    //        pm ! SendToConnection(sec(message))
+    //      }
     case ToChildMessage(data) =>
       // TODO Cleanup of sending messages, wasteful split. Perhaps swap to JSON
       val decrypt: String = textEncryptor.decrypt(data.toString)
       println(s"Secret message is $decrypt")
-      if (decrypt.contains(";diffie;")) {
-        // <username>;diffie;<msg>
-        val split = decrypt.split(";diffie;")
-        context.system.eventStream.publish(SecureComInit(split(0), "diffie;" + split(1)))
-      } else if (decrypt.contains(";pubkey;")) {
-        val split = decrypt.split(";pubkey;")
-        context.system.eventStream.publish(SecureComInit(split(0), "pubkey;" + split(1)))
-      } else {
-        val split = decrypt.split(";")
-        context.system.eventStream.publish(SecureComInit(split(0), split(1)))
+      context.system.eventStream.publish(decrypt)
+    case input: String =>
+      println(s"Raw: $input")
+      val json = parse(input)
+      println(s"Json: $json")
+      implicit val formats = DefaultFormats
+      val to = (json \ "to").extract[String]
+      println(s"To: $to")
+      if (to == username || to == "ALL") {
+        println("Sending...")
+        pm ! SendToConnection(sec(input))
       }
+    //      val json = parse(decrypt)
+    //      (json \ "token").toString match {
+    //        case "SecureInit" =>
+    //          context.system.eventStream.publish(SecureInit())
+    //      } else if (decrypt.contains(";pubkey;")) {
+    //      val split = decrypt.split(";pubkey;")
+    //      context.system.eventStream.publish(SecureComInit(split(0), "pubkey;" + split(1)))
+    //    } else {
+    //      val split = decrypt.split(";")
+    //      context.system.eventStream.publish(SecureComInit(split(0), split(1)))
+    //    }
     case err@_ => failure(err)
   }
 

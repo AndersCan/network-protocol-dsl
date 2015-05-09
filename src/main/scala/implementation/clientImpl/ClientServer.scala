@@ -7,13 +7,20 @@ import akka.io.{IO, Tcp}
 import com.protocoldsl.actors.ProtocolMonitor
 import com.protocoldsl.protocol.{ProtocolBuilder, Validator}
 import implementation.actors.children.{SecureComInit, NewUser}
+import net.liftweb.json._
 
 /**
  * Created by anders on 20/04/15.
  */
 
+case class ChatMessage(from: String, to: String, msg: String)
+
+case class SecureInit(from: String, header: String, number: Double)
+
+case class ConnectedUsers(users: List[String])
+
 object ClientServer {
-  def props(remotHost: InetSocketAddress) = Props(classOf[ClientServer], remotHost)
+  def props(remoteHost: InetSocketAddress) = Props(classOf[ClientServer], remoteHost)
 }
 
 class ClientServer(remoteHost: InetSocketAddress) extends Actor {
@@ -21,6 +28,8 @@ class ClientServer(remoteHost: InetSocketAddress) extends Actor {
   import akka.io.Tcp._
   import context.system
 
+
+  val isAnything = new Validator(in => Right(in))
 
   val isPrime = new Validator(input => try {
     val maybePrime: BigInt = BigInt(input.toString.dropRight(2))
@@ -48,31 +57,42 @@ class ClientServer(remoteHost: InetSocketAddress) extends Actor {
       Left("msg breaks protocol. not a username")
   })
 
-  val usernames = new Validator(x => try {
-    // List of usernames
-    Right(x.dropRight(2))
+
+  val Message = new Validator(x => try {
+    println(s"JSON: $x")
+    val json = parse(x)
+    println(s"Token: $json")
+    val token = (json \ "token").toString.drop(1).dropRight(1)
+    token.toString match {
+      case "ConnectedUsers" =>
+        Right(ConnectedUsers((json \ "users").children.map(_.toString)))
+      case "SecureInit" =>
+        Right(SecureInit((json \ "from").toString, (json \ "header").toString, (json \ "msg").toString.toDouble))
+      case "ChatMessage" =>
+        Right(ChatMessage((json \ "from").toString, (json \ "to").toString, (json \ "msg").toString))
+      case "NewUser" =>
+        Right(NewUser((json \ "from").toString))
+    }
   } catch {
     case e: Exception =>
-      Left("msg breaks protocol. not a username")
+      Left("msg breaks protocol. not a valid message")
   })
 
-  val isAnything = new Validator(in => Right(in))
 
-
-//  val chatMessage = new Validator(msg => try {
-//    println(s"Message: $msg")
-//    val split = msg.split(";")
-//    split(0) match {
-//      case "username" =>
-//        Right(NewUser(split(1)))
-//      case "message" =>
-//        Right(ChatMessage(split(1)))
-//      case _ => Left("Unexpected ChatMessage received")
-//    }
-//  } catch {
-//    case e: Exception =>
-//      Left(s"msg breaks protocol. Exception caught $e")
-//  })
+  //  val chatMessage = new Validator(msg => try {
+  //    println(s"Message: $msg")
+  //    val split = msg.split(";")
+  //    split(0) match {
+  //      case "username" =>
+  //        Right(NewUser(split(1)))
+  //      case "message" =>
+  //        Right(ChatMessage(split(1)))
+  //      case _ => Left("Unexpected ChatMessage received")
+  //    }
+  //  } catch {
+  //    case e: Exception =>
+  //      Left(s"msg breaks protocol. Exception caught $e")
+  //  })
 
 
   val secureCom = ProtocolBuilder() anyone isAnything loop()

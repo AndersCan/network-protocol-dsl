@@ -3,7 +3,8 @@ package implementation.clientImpl
 import akka.actor._
 import akka.util.ByteString
 import com.protocoldsl.actors._
-import implementation.actors.children.{DiffieInit, SecureComInit, NewUser}
+import implementation.actors.children.{DiffieInit, NewUser, SecureComInit}
+import net.liftweb.json._
 import org.jasypt.util.text.BasicTextEncryptor
 
 /**
@@ -39,6 +40,7 @@ class SecureChatClient() extends Actor {
   // only A and C knows this
   var sharedSecret2 = 0.0
   var chatsecure = false
+  var user1 = false
   val chatEncryptor = new BasicTextEncryptor()
 
   def receive = {
@@ -71,40 +73,77 @@ class SecureChatClient() extends Actor {
     case err@_ => failure(err)
   }
 
+  import net.liftweb.json._
+  import net.liftweb.json.JsonDSL._
+
   def ChatRoom: Receive = {
     case ToChildMessage(data) =>
+      println("Result Received: " + getChatMessageType(textEncryptor.decrypt(data.toString)))
       getChatMessageType(textEncryptor.decrypt(data.toString)) match {
         case NewUser(name) =>
+          user1 = true
           println(s"Received username: $name")
           // Start DiffieInit
+          val diffieInit = s""" { "token" : "SecureInit", "header" : "Prime", "from" : "$username", "to" : "$name", "number" : $prime2 } """
+          sender() ! SendToConnection(sec(diffieInit))
+          myPublicKey2 = scala.math.pow(GENERATOR, privateKey2) % prime2
+        case SecureInit(from, header, number) =>
+          header match {
+            case "Prime" =>
+              // We are user 2
+              println(s"We got SecureInit from $from")
+              prime2 = number
+              myPublicKey2 = scala.math.pow(GENERATOR, privateKey2) % prime2
 
-          sender() ! SendToConnection(sec(s"$username;diffie;$prime2"))
-          myPublicKey2 = scala.math.pow(GENERATOR, privateKey2) % prime2
-        case DiffieInit(p) =>
-          // We are user 2
-          println("We got DiffieInit!")
-          prime2 = p
-          myPublicKey2 = scala.math.pow(GENERATOR, privateKey2) % prime2
-          println(s"Sending myPublickey: $myPublicKey2")
-          sender() ! SendToConnection(sec(s"$username;pubkey;$myPublicKey2"))
-        case PubKey(key) =>
-          if (!chatsecure) {
-            println(s"Received public key: $key")
-            chatsecure = true
-            sharedSecret2 = scala.math.pow(key, privateKey2) % prime2
-            println(s"Shared Secret2: ($key^$privateKey2) % $prime2")
-            println(s"Shared ChatSecret: ${sharedSecret2.toString}")
-            chatEncryptor.setPassword(sharedSecret2.toString)
-            sender() ! SendToConnection(sec(s"$username;pubkey;$myPublicKey2"))
-          } else {
-            println("Sending message...")
-            sender() ! SendToConnection(sec2("message;This is a secure chat channel"))
+              println(s"Sending myPublickey: $myPublicKey2")
+              val jsonpubkey = s"""{ "token" : "SecureInit", "header" : "PubKey", "from" : "$username", "to" : "$from",  "number" : "$myPublicKey2" }"""
+              sender() ! SendToConnection(sec(jsonpubkey))
+            case "PubKey" =>
+              if (!chatsecure) {
+                println(s"Received public key: $number")
+                chatsecure = true
+                sharedSecret2 = scala.math.pow(number, privateKey2) % prime2
+                println(s"Shared Secret2: ($number^$privateKey2) % $prime2")
+                println(s"Shared ChatSecret: ${sharedSecret2.toString}")
+                chatEncryptor.setPassword(sharedSecret2.toString)
+
+                val jsonpubkey = s"""{ "token" : "SecureInit", "header" : "PubKey", "from" : "$username", "to" : $from, "number" : "$myPublicKey2" }"""
+                sender() ! SendToConnection(sec(jsonpubkey))
+              } else {
+                println("Sending message...")
+                val jsonchatmsg = s"""{ "token" : "ChatMessage", "from" : "$username", "to" : $from, "msg" : "${chatEncryptor.encrypt("Hello my dear friend")}" }"""
+                sender() ! SendToConnection(sec(jsonchatmsg))
+              }
           }
-        case SecureComInit(user, msg) =>
-          //          val decrypted = textEncryptor.decrypt(msg)
-          //          println(s"Decrypted message: $decrypted")
-          println(s"Received message: $msg from $user")
-          println(s"Decrypted message: ${chatEncryptor.decrypt(msg)}")
+        case ChatMessage(from, to, msg) =>
+          println(s"${chatEncryptor.decrypt(msg)}, sent from: $from")
+
+        //        case DiffieInit(p) =>
+        //          //TODO Create a new actorref per connection.
+        //          // We are user 2
+        //          println("We got DiffieInit!")
+        //          prime2 = p
+        //          myPublicKey2 = scala.math.pow(GENERATOR, privateKey2) % prime2
+        //          println(s"Sending myPublickey: $myPublicKey2")
+        //          sender() ! SendToConnection(sec(s"$username;pubkey;$myPublicKey2"))
+        //        case PubKey(key) =>
+        //          if (!chatsecure) {
+        //            println(s"Received public key: $key")
+        //            chatsecure = true
+        //            sharedSecret2 = scala.math.pow(key, privateKey2) % prime2
+        //            println(s"Shared Secret2: ($key^$privateKey2) % $prime2")
+        //            println(s"Shared ChatSecret: ${sharedSecret2.toString}")
+        //            chatEncryptor.setPassword(sharedSecret2.toString)
+        //            sender() ! SendToConnection(sec(s"$username;pubkey;$myPublicKey2"))
+        //          } else {
+        //            println("Sending message...")
+        //            sender() ! SendToConnection(sec2("message;This is a secure chat channel"))
+        //          }
+        //        case SecureComInit(user, msg) =>
+        //          //          val decrypted = textEncryptor.decrypt(msg)
+        //          //          println(s"Decrypted message: $decrypted")
+        //          println(s"Received message: $msg from $user")
+        //          println(s"Decrypted message: ${chatEncryptor.decrypt(msg)}")
       }
     case err@_ => failure(err)
   }
@@ -117,21 +156,36 @@ class SecureChatClient() extends Actor {
     case unknown@_ => println(s"unknown message: $unknown")
   }
 
+  implicit val formats = DefaultFormats
+
   // TODO Create Parent case class for chat message
   def getChatMessageType(msg: String): Any = {
-    println(s"Msg Received: $msg")
-    val split = msg.split(";")
-    split(0) match {
-      case "username" =>
-        NewUser(split(1))
-      case "message" =>
-        SecureComInit(split(0), split(1))
-      case "diffie" =>
-        DiffieInit(split(1).toDouble)
-      case "pubkey" =>
-        PubKey(split(1).toDouble)
-      case msg: String if msg forall Character.isDigit =>
-        SecureComInit(split(0), split(1))
+    println(s"Raw: $msg")
+    val json = parse(msg)
+    val token = compact(render(json \ "token")).extract[String].drop(1).dropRight(1)
+    println(s"Token: $token")
+    token.toString match {
+      case "ConnectedUsers" =>
+        ConnectedUsers((json \ "users").children.map(_.toString))
+      case "SecureInit" =>
+        SecureInit((json \ "from").extract[String], (json \ "header").extract[String], (json \ "number").extract[String].toDouble)
+      case "ChatMessage" =>
+        ChatMessage((json \ "from").extract[String], (json \ "to").extract[String], (json \ "msg").extract[String])
+      case "NewUser" =>
+        NewUser((json \ "from").extract[String])
+      //    println(s"Msg Received: $msg")
+      //    val split = msg.split(";")
+      //    split(0) match {
+      //      case "username" =>
+      //        NewUser(split(1))
+      //      case "message" =>
+      //        SecureComInit(split(0), split(1))
+      //      case "diffie" =>
+      //        DiffieInit(split(1).toDouble)
+      //      case "pubkey" =>
+      //        PubKey(split(1).toDouble)
+      //      case msg: String if msg forall Character.isDigit =>
+      //        SecureComInit(split(0), split(1))
       case _ => Left("Unexpected ChatMessage received")
     }
   }
@@ -141,7 +195,4 @@ class SecureChatClient() extends Actor {
   }
 
   //Only to be used by SecureChat. Prepends username for Server to decrypt
-  def sec2(in: String): ByteString = {
-    ByteString.fromString(textEncryptor.encrypt(username + ';' + chatEncryptor.encrypt(in + "")))
-  }
 }
