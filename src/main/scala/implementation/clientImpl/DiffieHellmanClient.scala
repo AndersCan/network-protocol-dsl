@@ -35,7 +35,7 @@ class DiffieHellmanClient() extends Actor {
       println(s"Sending prime: $prime")
       sender() ! SendToConnection(ByteString.fromString(s"$prime"))
       context become waitingForPubkey
-    case ProtocolFailure => sender() ! ChildFinished
+    case ProtocolEnded => sender() ! ChildFinished
     case _ =>
       println("Unknown message...")
   }
@@ -68,7 +68,7 @@ class DiffieHellmanClient() extends Actor {
   }
 
   def failure(msg: Any) = msg match {
-    case ProtocolFailure(err) =>
+    case ProtocolEnded(err) =>
       // Protocol has been ended. End self then tell parent
       println(err)
       sender() ! ChildFinished

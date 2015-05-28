@@ -57,7 +57,7 @@ class SecureChatClient() extends Actor {
       println(s"Sending prime: $prime")
       sender() ! SendToConnection(ByteString.fromString(s"$prime"))
       context become WaitingForPubkey
-    case ProtocolFailure => sender() ! ChildFinished
+    case ProtocolEnded => sender() ! ChildFinished
     case err@_ =>
       println(s"SCC: Unknown message...$err")
   }
@@ -112,7 +112,7 @@ class SecureChatClient() extends Actor {
   }
 
   def failure(msg: Any) = msg match {
-    case ProtocolFailure(err) =>
+    case ProtocolEnded(err) =>
       // Protocol has been ended. End self then tell parent
       println(err)
       sender() ! ChildFinished

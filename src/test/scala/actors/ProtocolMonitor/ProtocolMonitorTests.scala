@@ -29,7 +29,7 @@ class ProtocolMonitorTests(_system: ActorSystem) extends TestKit(_system) with I
     "send a valid message to its child" in {
       val child = TestProbe()
       val connection = TestProbe()
-      val proto = (new ProtocolBuilder() receive isAnything).compile
+      val proto = (new ProtocolBuilder() receives isAnything).compile
       val handler = system.actorOf(ProtocolMonitor.props(proto, connection.ref, child.ref))
 
       handler ! Received(simpleMessage)
@@ -40,17 +40,17 @@ class ProtocolMonitorTests(_system: ActorSystem) extends TestKit(_system) with I
     "not send invalid message to its child" in {
       val child = TestProbe()
       val connection = TestProbe()
-      val proto = (new ProtocolBuilder() send isNothing).compile
+      val proto = (new ProtocolBuilder() sends isNothing).compile
       val handler = system.actorOf(ProtocolMonitor.props(proto, connection.ref, child.ref))
       handler ! Received(simpleMessage)
-      child expectMsgClass(5000.millis, ProtocolFailure("").getClass)
+      child expectMsgClass(5000.millis, ProtocolEnded("").getClass)
     }
   }
   it must {
     "forward a valid message from child to connection" in {
       val child = TestProbe()
       val connection = TestProbe()
-      val proto = (new ProtocolBuilder() send isAnything).compile
+      val proto = (new ProtocolBuilder() sends isAnything).compile
       val handler = system.actorOf(ProtocolMonitor.props(proto, connection.ref, child.ref))
 
       handler ! SendToConnection(simpleMessage)
@@ -61,7 +61,7 @@ class ProtocolMonitorTests(_system: ActorSystem) extends TestKit(_system) with I
     "must not forward a invalid message from child to connection" in {
       val child = TestProbe()
       val connection = TestProbe()
-      val proto = (new ProtocolBuilder() receive isNothing).compile
+      val proto = (new ProtocolBuilder() receives isNothing).compile
       val handler = system.actorOf(ProtocolMonitor.props(proto, connection.ref, child.ref))
 
       handler ! SendToConnection(simpleMessage)

@@ -69,10 +69,10 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
   implicit val server = new ProtocolBuilder()
 
   val mulServer =
-    server receive isInt receive isInt send isAnything loop()
+    server receives isInt receives isInt sends isAnything loop()
 
   val echoServer = ProtocolBuilder.loop(
-    server receive isAnything send isAnything
+    server receives isAnything sends isAnything
   )
 
   val mulOrEchoTest = new Branch(input =>
@@ -83,14 +83,14 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
   val branching = ProtocolBuilder() branchOn mulOrEchoTest
 
   //Diffie Initiation
-  val diffieInit = server receive isPrime send isDouble receive isDouble
+  val diffieInit = server receives isPrime sends isDouble receives isDouble
   //Diffie Server Chat
   val diffieProtocol = diffieInit looped(0, server anyone isAnything loop())
 
   //SecureChat
   //  val securechatProtocol = diffieInit receive username send usernames receive username next server anyone isAnything loop()
 
-  val securechatProtocol = diffieInit receive username looped(0, server anyone isAnything loop())
+  val securechatProtocol = diffieInit receives username looped(0, server anyone isAnything loop())
 
   //    c send(s, isPrime) // sends prime
   //    s send(c, isDouble) // sends shared secret

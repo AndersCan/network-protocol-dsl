@@ -58,7 +58,7 @@ class ProtocolBuilder(val states: List[MessageType]) {
    * @param v validates expected message
    * @return new ProtocolBuilder with Send(v) appended.
    */
-  def send(v: Validator): ProtocolBuilder = {
+  def sends(v: Validator): ProtocolBuilder = {
     this addState Send(v)
   }
 
@@ -94,7 +94,7 @@ class ProtocolBuilder(val states: List[MessageType]) {
    * @param v validates expected message
    * @return new ProtocolBuilder with Receive(v) appended.
    */
-  def receive(v: Validator): ProtocolBuilder = {
+  def receives(v: Validator): ProtocolBuilder = {
     this addState Receive(v)
   }
 

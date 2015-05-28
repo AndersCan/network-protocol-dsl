@@ -16,7 +16,7 @@ case class ToChildMessage(data: Any)
 
 case class SendToConnection(data: ByteString)
 
-case class ProtocolFailure(error: Any)
+case class ProtocolEnded(reason: Any)
 
 case object ChildFinished
 
@@ -70,7 +70,7 @@ class ProtocolMonitor(protocol: Protocol, connection: ActorRef, consumer: ActorR
   def initiateStop(err: Any) = {
     //println(s"Initiate stop: $err")
     context become waitingForShutdown
-    consumer ! ProtocolFailure(err)
+    consumer ! ProtocolEnded(err)
   }
 
   def waitingForShutdown: Receive = {

@@ -97,9 +97,9 @@ class ClientServer(remoteHost: InetSocketAddress) extends Actor {
 
   val secureCom = ProtocolBuilder() anyone isAnything loop()
 
-  val diffieClient = ProtocolBuilder() send isPrime receive isDouble send isDouble next secureCom
+  val diffieClient = ProtocolBuilder() sends isPrime receives isDouble sends isDouble next secureCom
   //Diffie Initiation
-  val diffieInit = ProtocolBuilder() send isPrime receive isDouble send isDouble
+  val diffieInit = ProtocolBuilder() sends isPrime receives isDouble sends isDouble
   //Diffie Server Chat
   val diffieProtocol = diffieInit next ProtocolBuilder() anyone isAnything loop()
 
@@ -107,7 +107,7 @@ class ClientServer(remoteHost: InetSocketAddress) extends Actor {
   // SERVER
   //val securechatProtocol = diffieInit receive username send usernames receive username next ProtocolBuilder() anyone isAnything loop()
   //CLIENT
-  val securechatProtocol = diffieInit send username looped(0, ProtocolBuilder() anyone isAnything loop())
+  val securechatProtocol = diffieInit sends username looped(0, ProtocolBuilder() anyone isAnything loop())
 
   def receive = {
     case b@Bound(localAddress) =>

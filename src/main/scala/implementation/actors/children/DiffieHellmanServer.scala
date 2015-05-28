@@ -67,7 +67,7 @@ class DiffieHellmanServer extends Actor {
   }
 
   def failure(msg: Any) = msg match {
-    case ProtocolFailure(err) =>
+    case ProtocolEnded(err) =>
       // Protocol has been ended. End self then tell parent
       println(err)
       sender() ! ChildFinished
