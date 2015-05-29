@@ -3,7 +3,7 @@ package implementation.clientImpl
 import akka.actor._
 import akka.util.ByteString
 import com.protocoldsl.actors._
-import implementation.actors.children.{DiffieInit, NewUser, SecureComInit}
+import implementation.serverImpl.children.{DiffieInit, NewUser, SecureComInit}
 import implementation.clientImpl.util.{PublicKey, Prime, StartDiffie, DiffieHellman}
 import net.liftweb.json._
 import org.jasypt.util.text.BasicTextEncryptor

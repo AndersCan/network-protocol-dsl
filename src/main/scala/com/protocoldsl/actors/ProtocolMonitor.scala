@@ -53,6 +53,7 @@ class ProtocolMonitor(protocol: Protocol, connection: ActorRef, consumer: ActorR
         consumer ! ToChildMessage(msg.right.get)
       } else {
         // Protocol error
+        println("Error on: " + data.utf8String)
         initiateStop(msg.left)
       }
     case Initiation =>

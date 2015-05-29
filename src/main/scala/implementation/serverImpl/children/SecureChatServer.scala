@@ -1,4 +1,4 @@
-package implementation.actors.children
+package implementation.serverImpl.children
 
 import akka.actor.{Actor, ActorRef, Props}
 import akka.util.ByteString

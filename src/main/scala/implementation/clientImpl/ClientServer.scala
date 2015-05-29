@@ -6,7 +6,7 @@ import akka.actor.{Actor, Props}
 import akka.io.{IO, Tcp}
 import com.protocoldsl.actors.ProtocolMonitor
 import com.protocoldsl.protocol.{ProtocolBuilder, Validator}
-import implementation.actors.children.{SecureComInit, NewUser}
+import implementation.serverImpl.children.{SecureComInit, NewUser}
 import net.liftweb.json._
 
 /**
