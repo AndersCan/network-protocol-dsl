@@ -107,7 +107,6 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
       // Sender() is sender of the current message
       val connection = sender()
       val handler = context.actorOf(ProtocolMonitor.props(proto, connection, consumer))
-      println("Hello..")
       connection ! Register(handler)
   }
 

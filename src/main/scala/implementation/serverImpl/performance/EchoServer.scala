@@ -1,7 +1,5 @@
 package implementation.serverImpl.performance
 
-package implementation.serverImpl
-
 import java.net.InetSocketAddress
 
 import akka.actor.{PoisonPill, Actor, Props}

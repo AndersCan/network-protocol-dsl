@@ -11,7 +11,7 @@ import com.protocoldsl.actors.{Initiation, ChildFinished, SendToConnection, ToCh
 /**
  * Created by anders on 04/03/15.
  */
-
+case class EchoMessage(text: String)
 object EchoServerActor {
   def props() = Props(classOf[EchoServerActor])
 }
@@ -20,7 +20,10 @@ class EchoServerActor extends Actor {
 
   def receive = {
     case ToChildMessage(data) =>
-      sender() ! SendToConnection(ByteString.fromString(data + "\n"))
+      data match {
+        case EchoMessage(text)
+          sender() ! SendToConnection(ByteString.fromString(text))
+      }
     case Initiation =>
       println("Starting...")
     case err@_ =>

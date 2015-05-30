@@ -22,7 +22,7 @@ object EchoClient {
 }
 
 class EchoClient(remoteHost: InetSocketAddress) extends Actor {
-  val totalmessages = 100000
+  val totalmessages = 1000
 
   var NOW: Calendar = null
   var DONE: Calendar = null
@@ -44,21 +44,21 @@ class EchoClient(remoteHost: InetSocketAddress) extends Actor {
       self ! "START"
     case Received(data) =>
       // We got data
-      counter += 1
+      // Test if we have received 1 000000 msgs
+      if (counter == totalmessages) {
+        DONE = Calendar.getInstance()
+        val result = DONE.getTimeInMillis - NOW.getTimeInMillis
+        print(result + ", ")
+//        println("ServerMessage of Done: " + data.utf8String)
+        // RESTART
 
-    // Test if we have received 1 000000 msgs
-          if (counter == totalmessages) {
-            DONE = Calendar.getInstance()
-            val result = DONE.getTimeInMillis - NOW.getTimeInMillis
-            println("Done: " + result)
-            println("ServerMessage of Done: " + data.utf8String)
-            // RESTART
-            counter = 0
-            NOW = Calendar.getInstance()
-          }
+        counter = 0
+        NOW = Calendar.getInstance()
+      }
+
+      counter += 1
       connection ! Write(ByteString.fromString("Message: " + counter))
     case "START" =>
-      counter = 0
       NOW = Calendar.getInstance()
       connection ! Write(ByteString.fromString("MESSAGE"))
     case err@_ =>
