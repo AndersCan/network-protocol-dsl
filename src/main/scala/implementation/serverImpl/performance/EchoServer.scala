@@ -19,7 +19,6 @@ class EchoServer(inetSocketAddress: InetSocketAddress) extends Actor {
   import context.system
 
 
-
   def receive = {
     case b@Bound(localAddress) =>
       // do some logging or setup ...
@@ -45,12 +44,14 @@ class EchoServer(inetSocketAddress: InetSocketAddress) extends Actor {
  * SimplisticHandler has no checking
  */
 class SimplisticHandler extends Actor {
+
   import Tcp._
+
   def receive = {
     case Received(data) =>
-//      println("Server Got data...")
+      //      println("Server Got data...")
       sender() ! Write(data)
-    case PeerClosed     => context stop self
+    case PeerClosed => context stop self
     case ErrorClosed(err) =>
       println("Connection closed")
       self ! PoisonPill

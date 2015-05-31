@@ -42,7 +42,7 @@ class ProtocolMonitor(protocol: Protocol, connection: ActorRef, consumer: ActorR
         connection ! Write(data)
       } else {
         //Protocol error
-        initiateStop(msg.left)
+        initiateStop(msg.left.get)
       }
 
     case Received(data) =>
@@ -50,11 +50,11 @@ class ProtocolMonitor(protocol: Protocol, connection: ActorRef, consumer: ActorR
       // Remove \n from end of line
       val msg = protocol.validateReceivedMessage(data.utf8String)
       if (msg.isRight) {
-        consumer ! ToChildMessage(msg.right.get)
+        consumer ! msg.right.get
       } else {
         // Protocol error
         println("Error on: " + data.utf8String)
-        initiateStop(msg.left)
+        initiateStop(msg.left.get)
       }
     case Initiation =>
       consumer ! Initiation

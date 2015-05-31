@@ -1,4 +1,4 @@
-package implementation.serverImpl.children
+package implementation.serverImpl.performance
 
 /**
  * Created by aoc4 on 28/05/15.
@@ -6,12 +6,11 @@ package implementation.serverImpl.children
 
 import akka.actor.{Actor, Props}
 import akka.util.ByteString
-import com.protocoldsl.actors.{Initiation, ChildFinished, SendToConnection, ToChildMessage}
+import com.protocoldsl.actors.{ChildFinished, Initiation, SendToConnection}
+import com.protocoldsl.protocol.ValidationError
 
-/**
- * Created by anders on 04/03/15.
- */
 case class EchoMessage(text: String)
+
 object EchoServerActor {
   def props() = Props(classOf[EchoServerActor])
 }
@@ -19,13 +18,13 @@ object EchoServerActor {
 class EchoServerActor extends Actor {
 
   def receive = {
-    case ToChildMessage(data) =>
-      data match {
-        case EchoMessage(text)
-          sender() ! SendToConnection(ByteString.fromString(text))
-      }
+
+    case EchoMessage(data) =>
+      sender() ! SendToConnection(ByteString.fromString(data))
     case Initiation =>
       println("Starting...")
+    case ValidationError(msg, exception) =>
+      println(s"Error: $msg. Exception: $exception")
     case err@_ =>
       println("What..." + err)
       sender() ! ChildFinished

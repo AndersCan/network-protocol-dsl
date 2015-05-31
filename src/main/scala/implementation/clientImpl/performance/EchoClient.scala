@@ -22,7 +22,7 @@ object EchoClient {
 }
 
 class EchoClient(remoteHost: InetSocketAddress) extends Actor {
-  val totalmessages = 1000
+  val totalmessages = 10000
 
   var NOW: Calendar = null
   var DONE: Calendar = null

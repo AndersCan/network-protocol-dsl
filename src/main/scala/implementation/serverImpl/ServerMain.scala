@@ -12,7 +12,9 @@ object ServerMain extends App {
 
   val system = ActorSystem("echo-service-system")
   val endpoint = new InetSocketAddress("localhost", 8888)
-//  system.actorOf(EchoServer.props(endpoint), "echo-service")
+  // No PM
+//    system.actorOf(EchoServer.props(endpoint), "echo-service")
+  // With PM
   system.actorOf(Server.props(endpoint), "echo-service")
 
   scala.io.StdIn.readLine(s"Hit ENTER to exit ...${System.getProperty("line.separator")}")

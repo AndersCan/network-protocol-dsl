@@ -6,7 +6,8 @@ import akka.actor.{Actor, Props}
 import akka.io.{IO, Tcp}
 import com.protocoldsl.actors.ProtocolMonitor
 import com.protocoldsl.protocol.{ProtocolBuilder, Validator}
-import implementation.serverImpl.children.EchoServerActor
+import implementation.serverImpl.children.EchoMessage
+import implementation.serverImpl.performance.{EchoServerActor, EchoMessage}
 
 /**
  * Created by anders on 04/03/15.
@@ -21,7 +22,7 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
   import akka.io.Tcp._
   import context.system
 
-  val isAnything = new Validator(in => Right(in))
+  val isAnything = new Validator(in => Right(EchoMessage(in)))
 //  val nothing = new Validator(_ => Left("Nothing will always give a Left()"))
 //
 //  val isInt = new Validator(x => try {

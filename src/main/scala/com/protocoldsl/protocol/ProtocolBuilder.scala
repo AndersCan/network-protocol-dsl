@@ -4,7 +4,14 @@ package com.protocoldsl.protocol
  * Created by aoc4 on 05/03/15.
  */
 
-sealed case class Validator(f: String => Either[String, Any])
+/**
+ * ValidatorException is used to wrap a String error with an Exception
+ * @param message plain text error message
+ * @param exception optional Exception thrown
+ */
+case class ValidationError(message: String, exception: Exception = throw new Exception("Exception Not Set"))
+
+sealed case class Validator(f: String => Either[ValidationError, Any])
 
 
 abstract class MessageType() {
@@ -17,11 +24,11 @@ case class Receive(v: Validator) extends MessageType()
 
 case class Anyone(v: Validator) extends MessageType()
 
-case class Loop(pb: ProtocolBuilder, loops: Int = -1, next: ProtocolBuilder = ProtocolBuilder().end, v: Validator = new Validator(_ => Left("validate run on Loop step"))) extends MessageType()
+case class Loop(pb: ProtocolBuilder, loops: Int = -1, next: ProtocolBuilder = ProtocolBuilder().end, v: Validator = new Validator(_ => Left(ValidationError("validate run on Loop step")))) extends MessageType()
 
-case class Branch(branch: String => ProtocolBuilder, v: Validator = new Validator(_ => Left("validate ran on Branch step"))) extends MessageType()
+case class Branch(branch: String => ProtocolBuilder, v: Validator = new Validator(_ => Left(ValidationError("validate ran on Branch step")))) extends MessageType()
 
-case class END(v: Validator = new Validator(_ => Left("validate run on END step"))) extends MessageType()
+case class END(v: Validator = new Validator(_ => Left(ValidationError("validate run on END step")))) extends MessageType()
 
 
 object ProtocolBuilder {
@@ -149,7 +156,7 @@ class Protocol(var protocolStates: List[MessageType]) {
     msgType match {
       case Anyone(v) => msgType.v.f(input)
       case Receive(v) =>
-        Left("protocol violated - sending when should be receiving")
+        Left(ValidationError("protocol violated - sending when should be receiving"))
       case _ => msgType.v.f(input)
     }
   }
@@ -160,7 +167,7 @@ class Protocol(var protocolStates: List[MessageType]) {
     msgType match {
       case Anyone(v) => msgType.v.f(input)
       case Send(v) =>
-        Left("protocol violated - receiving when should be sending")
+        Left(ValidationError("protocol violated - receiving when should be sending"))
       case _ => msgType.v.f(input)
     }
   }
