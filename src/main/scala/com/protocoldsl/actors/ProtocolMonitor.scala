@@ -14,7 +14,7 @@ object ProtocolMonitor {
 
 case class ToChildMessage(data: Any)
 
-case class SendToConnection(data: ByteString)
+case class SendToConnection(data: String)
 
 case class ProtocolEnded(reason: Any)
 
@@ -37,9 +37,9 @@ class ProtocolMonitor(protocol: Protocol, connection: ActorRef, consumer: ActorR
   def receive = {
 
     case SendToConnection(data) =>
-      val msg = protocol.validateSendMessage(data.utf8String)
+      val msg = protocol.validateSendMessage(data)
       if (msg.isRight) {
-        connection ! Write(data)
+        connection ! Write(ByteString.fromString(data))
       } else {
         //Protocol error
         initiateStop(msg.left.get)
@@ -76,7 +76,7 @@ class ProtocolMonitor(protocol: Protocol, connection: ActorRef, consumer: ActorR
 
   def waitingForShutdown: Receive = {
     case SendToConnection(data) =>
-      connection ! Write(data)
+      connection ! Write(ByteString.fromString(data))
     case ChildFinished =>
       stopSelf()
     case _ => //println("Ignoring received msg")
