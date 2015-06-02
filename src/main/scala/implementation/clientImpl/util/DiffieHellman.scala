@@ -1,7 +1,6 @@
 package implementation.clientImpl.util
 
-import akka.actor.{Props, Actor}
-import akka.util.ByteString
+import akka.actor.{Actor, Props}
 import com.protocoldsl.actors.SendToConnection
 import implementation.clientImpl.ChatMessage
 import org.jasypt.util.text.BasicTextEncryptor
@@ -39,14 +38,14 @@ class DiffieHellman(ourUsername: String, theirUsername: String) extends Actor {
       println(s"Starting DiffieHellman with user: $theirUsername")
       // Start DiffieInit
       val diffieInit = s""" { "token" : "SecureInit", "header" : "Prime", "from" : "$ourUsername", "to" : "$theirUsername", "number" : $prime2 } """
-      sender() ! SendToConnection(bs(diffieInit))
+      sender() ! SendToConnection(diffieInit)
       myPublicKey2 = scala.math.pow(GENERATOR, privateKey2) % prime2
     case Prime(p) =>
       prime2 = p
       myPublicKey2 = scala.math.pow(GENERATOR, privateKey2) % prime2
       println(s"Sending myPublickey: $myPublicKey2")
       val jsonpubkey = s"""{ "token" : "SecureInit", "header" : "PubKey", "from" : "$ourUsername", "to" : "$theirUsername",  "number" : "$myPublicKey2" }"""
-      sender() ! SendToConnection(bs(jsonpubkey))
+      sender() ! SendToConnection(jsonpubkey)
     case PublicKey(pk) =>
       if (!chatsecure) {
         println(s"Received public key: $pk")
@@ -56,11 +55,11 @@ class DiffieHellman(ourUsername: String, theirUsername: String) extends Actor {
         println(s"Shared ChatSecret: ${sharedSecret2.toString}")
         chatEncryptor.setPassword(sharedSecret2.toString)
         val jsonpubkey = s"""{ "token" : "SecureInit", "header" : "PubKey", "from" : "$ourUsername", "to" : $theirUsername, "number" : "$myPublicKey2" }"""
-        sender() ! SendToConnection(bs(jsonpubkey))
+        sender() ! SendToConnection(jsonpubkey)
       } else {
         println("Sending message...")
         val jsonchatmsg = s"""{ "token" : "ChatMessage", "from" : "$ourUsername", "to" : $theirUsername, "msg" : "${chatEncryptor.encrypt("Hello my dear friend")}" }"""
-        sender() ! SendToConnection(bs(jsonchatmsg))
+        sender() ! SendToConnection(jsonchatmsg)
       }
     case ChatMessage(from, to, msg) =>
       println(s"${chatEncryptor.decrypt(msg)}, sent from: $from")
@@ -70,12 +69,7 @@ class DiffieHellman(ourUsername: String, theirUsername: String) extends Actor {
 
 
   // encrypt and create bytestring
-  def sec(in: String): ByteString = {
-    bs(chatEncryptor.encrypt(in + ""))
-  }
-
-  // create bytestring
-  def bs(in: String): ByteString = {
-    ByteString.fromString(in)
+  def sec(in: String): String = {
+    chatEncryptor.encrypt(in)
   }
 }

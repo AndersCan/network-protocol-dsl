@@ -5,8 +5,8 @@ import java.net.InetSocketAddress
 import akka.actor.{Actor, Props}
 import akka.io.{IO, Tcp}
 import com.protocoldsl.actors.ProtocolMonitor
-import com.protocoldsl.protocol.{ProtocolBuilder, Validator}
-import implementation.serverImpl.children.{SecureComInit, NewUser}
+import com.protocoldsl.protocol.{ProtocolBuilder, ValidationError, Validator}
+import implementation.serverImpl.children.NewUser
 import net.liftweb.json._
 
 /**
@@ -36,25 +36,25 @@ class ClientServer(remoteHost: InetSocketAddress) extends Actor {
     println(maybePrime)
     val result = com.protocoldsl.crypto.Helper.fermat(maybePrime)
     if (result) Right(input.toDouble)
-    else Left("Not prime")
+    else Left(ValidationError("Not prime"))
   } catch {
     case e: Exception =>
       println(e.getMessage)
-      Left("msg breaks protocol. not PRIME")
+      Left(ValidationError("msg breaks protocol. not PRIME"))
   })
 
   val isDouble = new Validator(x => try {
     Right(x.dropRight(2).toDouble)
   } catch {
     case e: Exception =>
-      Left("msg breaks protocol. not double")
+      Left(ValidationError("msg breaks protocol. not double"))
   })
 
   val username = new Validator(x => try {
     Right(x.dropRight(2))
   } catch {
     case e: Exception =>
-      Left("msg breaks protocol. not a username")
+      Left(ValidationError("msg breaks protocol. not a username"))
   })
 
 
@@ -75,7 +75,7 @@ class ClientServer(remoteHost: InetSocketAddress) extends Actor {
     }
   } catch {
     case e: Exception =>
-      Left("msg breaks protocol. not a valid message")
+      Left(ValidationError("msg breaks protocol. not a valid message"))
   })
 
 
@@ -87,7 +87,7 @@ class ClientServer(remoteHost: InetSocketAddress) extends Actor {
   //        Right(NewUser(split(1)))
   //      case "message" =>
   //        Right(ChatMessage(split(1)))
-  //      case _ => Left("Unexpected ChatMessage received")
+  //      case _ => Left(ValidationError("Unexpected ChatMessage received"))
   //    }
   //  } catch {
   //    case e: Exception =>

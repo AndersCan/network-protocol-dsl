@@ -5,7 +5,6 @@ package implementation.serverImpl.performance
  */
 
 import akka.actor.{Actor, Props}
-import akka.util.ByteString
 import com.protocoldsl.actors.{ChildFinished, Initiation, SendToConnection}
 import com.protocoldsl.protocol.ValidationError
 
@@ -20,7 +19,7 @@ class EchoServerActor extends Actor {
   def receive = {
 
     case EchoMessage(data) =>
-      sender() ! SendToConnection(ByteString.fromString(data))
+      sender() ! SendToConnection(data)
     case Initiation =>
       println("Starting...")
     case ValidationError(msg, exception) =>

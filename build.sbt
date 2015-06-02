@@ -18,4 +18,4 @@ libraryDependencies ++= Seq(
   "net.liftweb" %% "lift-json" % "2.6"
 )
 
-enablePlugins(JavaAppPackaging)
+//enablePlugins(JavaAppPackaging)

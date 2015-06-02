@@ -1,7 +1,6 @@
 package implementation.clientImpl
 
 import akka.actor._
-import akka.util.ByteString
 import com.protocoldsl.actors._
 import org.jasypt.util.text.BasicTextEncryptor
 
@@ -33,7 +32,7 @@ class DiffieHellmanClient() extends Actor {
     case Initiation =>
       println(s"PrivateKey: $privateKey")
       println(s"Sending prime: $prime")
-      sender() ! SendToConnection(ByteString.fromString(s"$prime"))
+      sender() ! SendToConnection(s"$prime")
       context become waitingForPubkey
     case ProtocolEnded => sender() ! ChildFinished
     case _ =>
@@ -46,7 +45,7 @@ class DiffieHellmanClient() extends Actor {
       println(s"Received PubKey: $receivedValue")
       myPublicKey = scala.math.pow(generator, privateKey) % prime
       println(s"Sending MyPubKey: $myPublicKey")
-      sender() ! SendToConnection(ByteString.fromString(myPublicKey.toString))
+      sender() ! SendToConnection(myPublicKey.toString)
       sharedSecret = scala.math.pow(receivedValue, privateKey) % prime
       println(s"Shared Secret: ($receivedValue^$privateKey) % $prime")
       println(s"Shared Secret: ${sharedSecret.toString}")
@@ -59,10 +58,9 @@ class DiffieHellmanClient() extends Actor {
   }
 
   def secureCom: Receive = {
-    case "START" => sender() ! SendToConnection(sec("Starting communication..."))
+    case "START" => sender() ! SendToConnection(encrypt("Starting communication..."))
     case ToChildMessage(data) =>
-      val encrypted = sec("Hello From Client -- Secure Communication")
-      println(encrypted.utf8String)
+      val encrypted = encrypt("Hello From Client -- Secure Communication")
       sender() ! SendToConnection(encrypted)
     case err@_ => failure(err)
   }
@@ -76,7 +74,7 @@ class DiffieHellmanClient() extends Actor {
     case unknown@_ => println(s"unknown message: $unknown")
   }
 
-  def sec(in: String): ByteString = {
-    ByteString.fromString(textEncryptor.encrypt(in + "\n"))
+  def encrypt(in: String): String = {
+    textEncryptor.encrypt(in + "\n")
   }
 }

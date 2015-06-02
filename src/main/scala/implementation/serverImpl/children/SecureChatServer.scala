@@ -1,7 +1,6 @@
 package implementation.serverImpl.children
 
 import akka.actor.{Actor, ActorRef, Props}
-import akka.util.ByteString
 import com.protocoldsl.actors._
 import net.liftweb.json._
 import org.jasypt.util.text.BasicTextEncryptor
@@ -9,6 +8,8 @@ import org.jasypt.util.text.BasicTextEncryptor
 /**
  * Created by aoc4 on 23/03/15.
  */
+
+case class PrimeAndGenerator(prime: Double, generator: Double)
 
 case class ChatMessage(from: String, to: String, msg: String)
 
@@ -56,7 +57,7 @@ class SecureChatServer extends Actor {
       prime = receivedValue
       myPublicKey = scala.math.pow(generator, privateKey) % prime
       //      println(s"Sending MyPubKey: $myPublicKey")
-      sender() ! SendToConnection(ByteString.fromString(myPublicKey + "\r\n"))
+      sender() ! SendToConnection(myPublicKey + "\r\n")
       context become WaitingForPubKey
     case err@_ => failure(err)
   }
@@ -115,7 +116,7 @@ class SecureChatServer extends Actor {
       //      println(s"To: $to")
       if (to == username || to == "ALL") {
         //        println("Sending...")
-        pm ! SendToConnection(sec(input))
+        pm ! SendToConnection(encrypt(input))
       }
     //      val json = parse(decrypt)
     //      (json \ "token").toString match {
@@ -140,8 +141,8 @@ class SecureChatServer extends Actor {
     case unknown@_ => println(s"unknown message: $unknown")
   }
 
-  def sec(in: String): ByteString = {
-    ByteString.fromString(textEncryptor.encrypt(in + ""))
+  def encrypt(input: String): String = {
+    textEncryptor.encrypt(input)
   }
 }
 

@@ -1,11 +1,9 @@
 package implementation.clientImpl
 
 import akka.actor._
-import akka.util.ByteString
 import com.protocoldsl.actors._
-import implementation.serverImpl.children.{DiffieInit, NewUser, SecureComInit}
-import implementation.clientImpl.util.{PublicKey, Prime, StartDiffie, DiffieHellman}
-import net.liftweb.json._
+import implementation.clientImpl.util.{DiffieHellman, Prime, PublicKey, StartDiffie}
+import implementation.serverImpl.children.NewUser
 import org.jasypt.util.text.BasicTextEncryptor
 
 /**
@@ -55,7 +53,7 @@ class SecureChatClient() extends Actor {
       // send prime
       println(s"PrivateKey: $privateKey")
       println(s"Sending prime: $prime")
-      sender() ! SendToConnection(ByteString.fromString(s"$prime"))
+      sender() ! SendToConnection(s"$prime")
       context become WaitingForPubkey
     case ProtocolEnded => sender() ! ChildFinished
     case err@_ =>
@@ -68,20 +66,20 @@ class SecureChatClient() extends Actor {
       //      println(s"Received PubKey: $receivedValue")
       myPublicKey = scala.math.pow(GENERATOR, privateKey) % prime
       //      println(s"Sending MyPubKey: $myPublicKey")
-      sender() ! SendToConnection(ByteString.fromString(myPublicKey.toString))
+      sender() ! SendToConnection(myPublicKey.toString)
       sharedSecret = scala.math.pow(receivedValue, privateKey) % prime
       //      println(s"Shared Secret: ($receivedValue^$privateKey) % $prime")
       //      println(s"Shared Secret: ${sharedSecret.toString}")
       textEncryptor.setPassword(sharedSecret.toString)
       // Send username
       context become ChatRoom
-      val encryptedusername = sec("username;" + username)
+      val encryptedusername = encrypt("username;" + username)
       sender() ! SendToConnection(encryptedusername)
     case err@_ => failure(err)
   }
 
-  import net.liftweb.json._
   import net.liftweb.json.JsonDSL._
+  import net.liftweb.json._
 
   def ChatRoom: Receive = {
     case ToChildMessage(data) =>
@@ -107,7 +105,7 @@ class SecureChatClient() extends Actor {
         case cm@ChatMessage(from, to, msg) =>
           connectedUsers(from) ! cm
       }
-    case SendToConnection(body) => pm ! SendToConnection(sec(body.utf8String))
+    case SendToConnection(body) => pm ! SendToConnection(encrypt(body))
     case err@_ => failure(err)
   }
 
@@ -140,8 +138,8 @@ class SecureChatClient() extends Actor {
     }
   }
 
-  def sec(in: String): ByteString = {
-    ByteString.fromString(textEncryptor.encrypt(in + ""))
+  def encrypt(in: String): String = {
+    textEncryptor.encrypt(in)
   }
 
   //Only to be used by SecureChat. Prepends username for Server to decrypt

@@ -1,7 +1,6 @@
 package implementation.serverImpl.children
 
 import akka.actor.{Actor, Props}
-import akka.util.ByteString
 import com.protocoldsl.actors._
 import org.jasypt.util.text.BasicTextEncryptor
 
@@ -40,7 +39,7 @@ class DiffieHellmanServer extends Actor {
       prime = receivedValue
       myPublicKey = scala.math.pow(generator, privateKey) % prime
       println(s"Sending MyPubKey: $myPublicKey")
-      sender() ! SendToConnection(ByteString.fromString(myPublicKey + "\r\n"))
+      sender() ! SendToConnection(myPublicKey + "\r\n")
       context become WaitingForPubKey
     case err@_ => failure(err)
   }
@@ -62,7 +61,7 @@ class DiffieHellmanServer extends Actor {
     case ToChildMessage(data) =>
       println(s"Encrypted message is ${data.toString}")
       println(s"Secret message is ${textEncryptor.decrypt(data.toString)}")
-      sender() ! SendToConnection(ByteString.fromString("server reply\r\n"))
+      sender() ! SendToConnection("server reply\r\n")
     case err@_ => failure(err)
   }
 
