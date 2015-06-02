@@ -1,4 +1,4 @@
-import com.protocoldsl.crypto.Helper
+import implementation.crypto.Helper
 import org.scalatest.{FlatSpec, Matchers}
 
 

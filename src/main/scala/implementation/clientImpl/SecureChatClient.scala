@@ -3,14 +3,21 @@ package implementation.clientImpl
 import akka.actor._
 import com.protocoldsl.actors._
 import implementation.clientImpl.util.{DiffieHellman, Prime, PublicKey, StartDiffie}
-import implementation.serverImpl.children.NewUser
+import implementation.serverImpl.children.{EncryptedChatMessage, NewUser}
+import net.liftweb.json.JsonDSL._
+import net.liftweb.json._
 import org.jasypt.util.text.BasicTextEncryptor
 
 /**
  * Created by anders on 16/04/15.
  */
 
+case class PrimeAndGenerator(prime: Double, generator: Double)
+
 case class PubKey(key: Double)
+
+case class Username(username: String)
+
 
 object SecureChatClient {
   def props() =
@@ -22,7 +29,7 @@ class SecureChatClient() extends Actor {
   var pm: ActorRef = null
   val prime: Double = BigInt.probablePrime(8, scala.util.Random).toDouble
   //  val prime = 23.0
-  val GENERATOR = 2.0
+  val generator = 2.0
   // Generate a random Integer
   val privateKey = math.abs(scala.util.Random.nextInt(10) + 1)
   //  val privateKey = 6
@@ -34,17 +41,16 @@ class SecureChatClient() extends Actor {
 
   // Chat values
   val username = scala.math.abs(scala.util.Random.nextInt()).toString
-  var prime2 = BigInt.probablePrime(8, scala.util.Random).toDouble
-  val privateKey2 = math.abs(scala.util.Random.nextInt(10) + 1)
-  var myPublicKey2 = 0.0
+  //  var prime2 = BigInt.probablePrime(8, scala.util.Random).toDouble
+  //  val privateKey2 = math.abs(scala.util.Random.nextInt(10) + 1)
+  //  var myPublicKey2 = 0.0
   // only A and C knows this
-  var sharedSecret2 = 0.0
-  var chatsecure = false
-  var user1 = false
-  val chatEncryptor = new BasicTextEncryptor()
+  //  var sharedSecret2 = 0.0
+  //  var chatsecure = false
+  //  var user1 = false
+  //  val chatEncryptor = new BasicTextEncryptor()
 
-  //
-
+  // Map of ChatRoom Users
   var connectedUsers: Map[String, ActorRef] = Map()
 
   def receive = {
@@ -52,8 +58,8 @@ class SecureChatClient() extends Actor {
       pm = sender()
       // send prime
       println(s"PrivateKey: $privateKey")
-      println(s"Sending prime: $prime")
-      sender() ! SendToConnection(s"$prime")
+      println(s"Sending prime: $prime and generator $generator")
+      pm ! SendToConnection( s"""{ "prime" : "$prime", "generator" : "$generator" } """)
       context become WaitingForPubkey
     case ProtocolEnded => sender() ! ChildFinished
     case err@_ =>
@@ -61,30 +67,27 @@ class SecureChatClient() extends Actor {
   }
 
   def WaitingForPubkey: Receive = {
-    case ToChildMessage(data) =>
-      val receivedValue = data.asInstanceOf[Double]
-      //      println(s"Received PubKey: $receivedValue")
-      myPublicKey = scala.math.pow(GENERATOR, privateKey) % prime
+    case PubKey(pk) =>
+      myPublicKey = scala.math.pow(generator, privateKey) % prime
       //      println(s"Sending MyPubKey: $myPublicKey")
-      sender() ! SendToConnection(myPublicKey.toString)
-      sharedSecret = scala.math.pow(receivedValue, privateKey) % prime
+      sender() ! SendToConnection( s""" { "publickey": "$myPublicKey" } """)
+      sharedSecret = scala.math.pow(pk, privateKey) % prime
       //      println(s"Shared Secret: ($receivedValue^$privateKey) % $prime")
       //      println(s"Shared Secret: ${sharedSecret.toString}")
       textEncryptor.setPassword(sharedSecret.toString)
       // Send username
       context become ChatRoom
-      val encryptedusername = encrypt("username;" + username)
+      val encryptedusername = encrypt(username)
       sender() ! SendToConnection(encryptedusername)
     case err@_ => failure(err)
   }
 
-  import net.liftweb.json.JsonDSL._
-  import net.liftweb.json._
 
   def ChatRoom: Receive = {
-    case ToChildMessage(data) =>
-      println("Result Received: " + getChatMessageType(textEncryptor.decrypt(data.toString)))
-      getChatMessageType(textEncryptor.decrypt(data.toString)) match {
+    case EncryptedChatMessage(message) =>
+      // Decrypts with server key
+      println("Result Received: " + getChatMessageType(textEncryptor.decrypt(message)))
+      getChatMessageType(textEncryptor.decrypt(message)) match {
         case NewUser(name) =>
           // Add new user to our map
           println("Sending StartDiffie...")
@@ -114,7 +117,7 @@ class SecureChatClient() extends Actor {
       // Protocol has been ended. End self then tell parent
       println(err)
       sender() ! ChildFinished
-    case unknown@_ => println(s"unknown message: $unknown")
+    case unknown@_ => println(s"Unimplemented case: $unknown")
   }
 
   implicit val formats = DefaultFormats
@@ -141,6 +144,4 @@ class SecureChatClient() extends Actor {
   def encrypt(in: String): String = {
     textEncryptor.encrypt(in)
   }
-
-  //Only to be used by SecureChat. Prepends username for Server to decrypt
 }

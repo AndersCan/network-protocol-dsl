@@ -2,7 +2,7 @@ package com.protocoldsl.actors
 
 import akka.actor._
 import akka.util.ByteString
-import com.protocoldsl.protocol.Protocol
+import com.protocoldsl.protocol.{Validator, Protocol}
 
 /**
  * Created by anders on 04/03/15.
@@ -21,6 +21,8 @@ case class ProtocolEnded(reason: Any)
 case object ChildFinished
 
 case object Initiation
+
+case class DelayedValidation(input: String, validator: Validator)
 
 /**
  * ProtocolMaster Handles the incoming messages sent from a user and checks whether it obeys the defined protocol
@@ -53,7 +55,14 @@ class ProtocolMonitor(protocol: Protocol, connection: ActorRef, consumer: ActorR
         consumer ! msg.right.get
       } else {
         // Protocol error
-        println("Error on: " + data.utf8String)
+        initiateStop(msg.left.get)
+      }
+    case DelayedValidation(input, validator) =>
+      val msg = validator.f(input)
+      if (msg.isRight) {
+        consumer ! msg.right.get
+      } else {
+        // Protocol error
         initiateStop(msg.left.get)
       }
     case Initiation =>

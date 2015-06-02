@@ -4,9 +4,10 @@ import java.net.InetSocketAddress
 
 import akka.actor.{Actor, Props}
 import akka.io.{IO, Tcp}
-import com.protocoldsl.actors.ProtocolMonitor
+import com.protocoldsl.actors.{DelayedValidation, ProtocolMonitor}
 import com.protocoldsl.protocol.{ProtocolBuilder, ValidationError, Validator}
-import implementation.serverImpl.children.NewUser
+import implementation.crypto.Helper
+import implementation.serverImpl.children.{EncryptedChatMessage, NewUser}
 import net.liftweb.json._
 
 /**
@@ -34,7 +35,7 @@ class ClientServer(remoteHost: InetSocketAddress) extends Actor {
   val isPrime = new Validator(input => try {
     val maybePrime: BigInt = BigInt(input.toString.dropRight(2))
     println(maybePrime)
-    val result = com.protocoldsl.crypto.Helper.fermat(maybePrime)
+    val result = Helper.fermat(maybePrime)
     if (result) Right(input.toDouble)
     else Left(ValidationError("Not prime"))
   } catch {
@@ -57,8 +58,29 @@ class ClientServer(remoteHost: InetSocketAddress) extends Actor {
       Left(ValidationError("msg breaks protocol. not a username"))
   })
 
+  implicit val formats = DefaultFormats
+  // No tests if value is prime
+  val primeAndGenerator = new Validator(input => try {
+    val json = parse(input)
+    val p = json \ "prime"
+    val g = json \ "generator"
+    Right(PrimeAndGenerator(prime = p.extract[String].toDouble, generator = g.extract[String].toDouble))
+  } catch {
+    case e: Exception =>
+      Left(ValidationError("Msg could not be converted to a PrimeAndGenerator class: ", e))
+  })
 
-  val Message = new Validator(x => try {
+  val aPublicKey = new Validator(input => try {
+    val json = parse(input)
+    val pk = json \ "publickey"
+    // TODO FIX, PubKey class
+    Right(PubKey(pk.extract[String].toDouble))
+  } catch {
+    case e: Exception =>
+      Left(ValidationError("Msg could not be converted to a PubKey class: ", e))
+  })
+
+  val message = new Validator(x => try {
     println(s"JSON: $x")
     val json = parse(x)
     println(s"Token: $json")
@@ -78,6 +100,19 @@ class ClientServer(remoteHost: InetSocketAddress) extends Actor {
       Left(ValidationError("msg breaks protocol. not a valid message"))
   })
 
+  val chatMessage = new Validator(x => try {
+    Right(DelayedValidation(x, message))
+  } catch {
+    case e: Exception =>
+      Left(ValidationError("msg breaks protocol. not a valid message"))
+  })
+
+  val aChatMessage = new Validator(input => try {
+    Right(EncryptedChatMessage(input))
+  } catch {
+    case e: Exception =>
+      Left(ValidationError("Message was not a chatmessage", e))
+  })
 
   //  val chatMessage = new Validator(msg => try {
   //    println(s"Message: $msg")
@@ -96,18 +131,18 @@ class ClientServer(remoteHost: InetSocketAddress) extends Actor {
 
 
   val secureCom = ProtocolBuilder() anyone isAnything loop()
-
-  val diffieClient = ProtocolBuilder() sends isPrime receives isDouble sends isDouble next secureCom
+  // next might be buggy
+  val diffieClient = ProtocolBuilder() sends primeAndGenerator receives aPublicKey sends aPublicKey next secureCom
   //Diffie Initiation
-  val diffieInit = ProtocolBuilder() sends isPrime receives isDouble sends isDouble
+  val diffieInit = ProtocolBuilder() sends primeAndGenerator receives aPublicKey sends aPublicKey
   //Diffie Server Chat
-  val diffieProtocol = diffieInit next ProtocolBuilder() anyone isAnything loop()
+  // val diffieProtocol = diffieInit next ProtocolBuilder() anyone isAnything loop()
 
   //SecureChat
   // SERVER
   //val securechatProtocol = diffieInit receive username send usernames receive username next ProtocolBuilder() anyone isAnything loop()
   //CLIENT
-  val securechatProtocol = diffieInit sends username looped(0, ProtocolBuilder() anyone isAnything loop())
+  val securechatProtocol = diffieInit sends username looped(0, ProtocolBuilder() anyone aChatMessage loop())
 
   def receive = {
     case b@Bound(localAddress) =>
