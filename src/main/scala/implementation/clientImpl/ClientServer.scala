@@ -7,7 +7,7 @@ import akka.io.{IO, Tcp}
 import com.protocoldsl.actors.{DelayedValidation, ProtocolMonitor}
 import com.protocoldsl.protocol.{ProtocolBuilder, ValidationError, Validator}
 import implementation.crypto.Helper
-import implementation.serverImpl.children.{EncryptedChatMessage, NewUser}
+import implementation.serverImpl.children.NewUser
 import net.liftweb.json._
 
 /**
@@ -81,53 +81,30 @@ class ClientServer(remoteHost: InetSocketAddress) extends Actor {
   })
 
   val message = new Validator(x => try {
-    println(s"JSON: $x")
     val json = parse(x)
-    println(s"Token: $json")
-    val token = (json \ "token").toString.drop(1).dropRight(1)
+    val token = (json \ "token").extract[String] //.drop(1).dropRight(1)
     token.toString match {
       case "ConnectedUsers" =>
         Right(ConnectedUsers((json \ "users").children.map(_.toString)))
       case "SecureInit" =>
-        Right(SecureInit((json \ "from").toString, (json \ "header").toString, (json \ "msg").toString.toDouble))
+        Right(SecureInit((json \ "from").extract[String], (json \ "header").extract[String], (json \ "number").extract[String].toDouble))
       case "ChatMessage" =>
-        Right(ChatMessage((json \ "from").toString, (json \ "to").toString, (json \ "msg").toString))
+        Right(ChatMessage((json \ "from").extract[String], (json \ "to").extract[String], (json \ "msg").extract[String]))
       case "NewUser" =>
-        Right(NewUser((json \ "from").toString))
+        Right(NewUser((json \ "from").extract[String]))
     }
   } catch {
     case e: Exception =>
-      Left(ValidationError("msg breaks protocol. not a valid message"))
+      Left(ValidationError("Validation error on ChatMessage", e))
   })
 
-  val chatMessage = new Validator(x => try {
+
+  val aChatMessage = new Validator(x => try {
     Right(DelayedValidation(x, message))
   } catch {
     case e: Exception =>
-      Left(ValidationError("msg breaks protocol. not a valid message"))
+      Left(ValidationError("Delayed Error on aChatMessage", e))
   })
-
-  val aChatMessage = new Validator(input => try {
-    Right(EncryptedChatMessage(input))
-  } catch {
-    case e: Exception =>
-      Left(ValidationError("Message was not a chatmessage", e))
-  })
-
-  //  val chatMessage = new Validator(msg => try {
-  //    println(s"Message: $msg")
-  //    val split = msg.split(";")
-  //    split(0) match {
-  //      case "username" =>
-  //        Right(NewUser(split(1)))
-  //      case "message" =>
-  //        Right(ChatMessage(split(1)))
-  //      case _ => Left(ValidationError("Unexpected ChatMessage received"))
-  //    }
-  //  } catch {
-  //    case e: Exception =>
-  //      Left(s"msg breaks protocol. Exception caught $e")
-  //  })
 
 
   val secureCom = ProtocolBuilder() anyone isAnything loop()
@@ -150,7 +127,7 @@ class ClientServer(remoteHost: InetSocketAddress) extends Actor {
       println("Server bond to: " + localAddress)
     case CommandFailed(_: Bind) => context stop self
     case cu@Connected(remote, local) =>
-      println(s"New Connection: remote: $remote, local: $local")
+      //println(s"New Connection: remote: $remote, local: $local")
       val proto = securechatProtocol.compile
       val consumer = context.actorOf(SecureChatClient.props())
       // Sender() is sender of the current message

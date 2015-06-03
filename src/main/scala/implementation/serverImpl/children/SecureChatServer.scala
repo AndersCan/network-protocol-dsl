@@ -50,15 +50,15 @@ class SecureChatServer extends Actor {
   override def receive: Receive = {
     case Initiation =>
       // Do Initiation
-      println("Server Initiation...")
+      //println("Server Initiation...")
       // Store ProtocolMonitor for state ChatRoom
       pm = sender()
-    case PrimeAndGenerator(p,g) =>
+    case PrimeAndGenerator(p, g) =>
       prime = p
       generator = g
       myPublicKey = scala.math.pow(generator, privateKey) % prime
       //      println(s"Sending MyPubKey: $myPublicKey")
-      sender() ! SendToConnection(s""" { "publickey": "$myPublicKey" } """)
+      sender() ! SendToConnection( s""" { "publickey": "$myPublicKey" } """)
       context become WaitingForPubKey
     case err@_ => failure(err)
   }
@@ -68,7 +68,7 @@ class SecureChatServer extends Actor {
       //      println(s"Received PubKey: $receivedValue")
       sharedSecret = scala.math.pow(pk, privateKey) % prime
       //      println(s"Shared Secret: ($receivedValue^$privateKey) % $prime")
-      println(s"Shared Secret: ${sharedSecret.toString}")
+      //println(s"Shared Secret: ${sharedSecret.toString}")
       textEncryptor.setPassword(sharedSecret.toString)
       context become WaitingForUserName
 
@@ -78,32 +78,30 @@ class SecureChatServer extends Actor {
 
   def WaitingForUserName: Receive = {
     case Username(encryptedusername) =>
+
       username = textEncryptor.decrypt(encryptedusername)
-      println(s"Connected user is $username")
+      println(s"New user connected: $username")
       context.system.eventStream.publish( s""" { "token" : "NewUser", "to": "ALL", "from" : "$username" } """)
       context become ChatRoom
       context.system.eventStream.subscribe(self, classOf[String])
-    //      context.system.eventStream.subscribe(self, classOf[SecureComInit])
-    //      context.system.eventStream.subscribe(self, classOf[ChatMessage])
     case err@_ => failure(err)
   }
 
   // React to published and received events
   def ChatRoom: Receive = {
     case EncryptedChatMessage(data) =>
-      // TODO Cleanup of sending messages, wasteful split. Perhaps swap to JSON
       val decrypt: String = textEncryptor.decrypt(data)
       //      println(s"Secret message is $decrypt")
       context.system.eventStream.publish(decrypt)
     case input: String =>
-      println(s"Raw: $input")
+      //      println(s"Raw: $input")
       val json = parse(input)
       //      println(s"Json: $json")
       implicit val formats = DefaultFormats
       val to = (json \ "to").extract[String]
       //      println(s"To: $to")
       if (to == username || to == "ALL") {
-        //        println("Sending...")
+        //println(s"Sending encrypted message to: $username")
         pm ! SendToConnection(encrypt(input))
       }
 

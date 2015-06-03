@@ -3,7 +3,7 @@ package implementation.clientImpl
 import akka.actor._
 import com.protocoldsl.actors._
 import implementation.clientImpl.util.{DiffieHellman, Prime, PublicKey, StartDiffie}
-import implementation.serverImpl.children.{EncryptedChatMessage, NewUser}
+import implementation.serverImpl.children.NewUser
 import net.liftweb.json.JsonDSL._
 import net.liftweb.json._
 import org.jasypt.util.text.BasicTextEncryptor
@@ -57,8 +57,8 @@ class SecureChatClient() extends Actor {
     case Initiation =>
       pm = sender()
       // send prime
-      println(s"PrivateKey: $privateKey")
-      println(s"Sending prime: $prime and generator $generator")
+      //println(s"PrivateKey: $privateKey")
+      //println(s"Sending prime: $prime and generator $generator")
       pm ! SendToConnection( s"""{ "prime" : "$prime", "generator" : "$generator" } """)
       context become WaitingForPubkey
     case ProtocolEnded => sender() ! ChildFinished
@@ -84,30 +84,30 @@ class SecureChatClient() extends Actor {
 
 
   def ChatRoom: Receive = {
-    case EncryptedChatMessage(message) =>
-      // Decrypts with server key
-      println("Result Received: " + getChatMessageType(textEncryptor.decrypt(message)))
-      getChatMessageType(textEncryptor.decrypt(message)) match {
-        case NewUser(name) =>
-          // Add new user to our map
-          println("Sending StartDiffie...")
-          val diffie = context.actorOf(DiffieHellman.props(username, name))
-          diffie ! StartDiffie()
-          connectedUsers += name -> diffie
-        case SecureInit(from, header, number) =>
-          header match {
-            case "Prime" =>
-              // We are user 2
-              // Create Actor for this connection
-              val diffie = context.actorOf(DiffieHellman.props(username, from))
-              diffie ! Prime(number)
-              connectedUsers += from -> diffie
-            case "PubKey" =>
-              connectedUsers(from) ! PublicKey(number)
-          }
-        case cm@ChatMessage(from, to, msg) =>
-          connectedUsers(from) ! cm
+    case DelayedValidation(encrypted, validator) =>
+      pm ! DelayedValidation(textEncryptor.decrypt(encrypted), validator)
+    case NewUser(name) =>
+      // Add new user to our map
+      println(s"We are $username")
+      println(s"NewUser alert. The connected user is: $name")
+      val diffie = context.actorOf(DiffieHellman.props(username, name))
+      diffie ! StartDiffie()
+      connectedUsers += name -> diffie
+    case SecureInit(from, header, number) =>
+      header match {
+        case "Prime" =>
+          println(s"We are $username")
+          // We are user 2
+          // Create Actor for this connection
+          val diffie = context.actorOf(DiffieHellman.props(username, from))
+          diffie ! Prime(number)
+          connectedUsers += from -> diffie
+        case "PubKey" =>
+          connectedUsers(from) ! PublicKey(number)
       }
+    case cm@ChatMessage(from, to, msg) =>
+      connectedUsers(from) ! cm
+
     case SendToConnection(body) => pm ! SendToConnection(encrypt(body))
     case err@_ => failure(err)
   }
