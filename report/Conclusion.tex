@@ -1,0 +1,15 @@
+\section{Conclusion}
+In this paper we have explored the various aspects of specifying and implementing network protocols. We have discussed their importance and the difficulties revolved around creating a correct implementation. We have argued that creating a DSL for implementing protocols would be beneficial for solving this complexity.
+
+Our DSL provide a natural language for specifying protocols that help us reason about how one should create implementations. Further we can use this specification to verify that we obey the protocol during run-time. We have showed that the errors generated from the run-time checks provide us with enough information to pin-point exactly what and where something goes wrong. We have also seen that most of the benefits of our DSL relies on its correct usage. This means that developers must dedicate time to specify the message flow of the protocol and create validators for these messages.
+
+The usefulness of our DSL has been proven by our implementation of a chat server. This server allows multiple participants to connect and initiate a Diffie-Hellman-Merkel key exchange to establish a secure communication channel to both the server and all connecting clients. Allowing chat participants to exchange messages that only the recipient and sender can decrypt.
+
+We believe that our solution provides an excellent base for development and implementation of network protocols. It has a clear advantage over defining protocols with model checking as it also helps create the actual implementation of the protocol.   
+
+If given more time we would want to expand our DSL to be able to better monitor the communication over the event bus. Preferably we would want to create a solution where a Protocol Monitor was attached to the event bus, ensuring all communication was regulated by a PM. An alternative approach could be to not rely on the event bus, but allowing the PM to maintain multiple connections, avoiding the need for using the event bus. This may require a complete rework of the DSL, but may be well worth the effort.
+
+
+\subsection{Future Work}
+After specifying a protocol in our DSL, it would be of great use to be able to generate a model that showed the communication pattern between the participants in the protocol.
+Ideally our DSL would have some form of compile time checks that could check if a consumer had implemented cases for the messages returned from the validators. The compile time errors would then tell us which cases we had not implemented in our consumers. This may not be possible due to the complex nature of the protocol implementation, but is worth researching.

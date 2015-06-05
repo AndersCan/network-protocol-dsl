@@ -1,0 +1,78 @@
+\section{Related Work}
+\subsection{Model Checking}
+One possible approach to verifying whether a protocol implementation is conformant to its specification is to use a model checker. In the paper Model Checking Large Network Prototocol Implementation \cite{musuvathi2004model}, Madanlal Musuvathi and Dawsone R. Engler explain how they used their model checker, C Model Checker (CMC) \cite{musuvathi2002cmc} to check the Linux TCP/IP implementation. 
+
+Unlike many other model checkers, CMC does not operate on an abstracted version/model of the system: they use the implementation code. Their reasoning for doing so is because it reduces the effort needed to use a model checker. Secondly, the model used to describe the system, may not be correctly implemented. This will lead to errors not being successfully detected. 
+
+Their model checker works by exploring a protocols state space by simulating events to create new states. These states are then checked against a ``Correctness Property'' that has been defined. They argue that many system errors only occur after certain events have occurred. These state spaces can often be exponentially large and can make it impossible to search the entire state space\footnote{This problem is often referred to as ``State Space Explosion''}. This problem can lead to edge cases where an erroneous state is not detected.
+\\\\
+Their solution ultimately verifies if the system at certain points in the code is correct by using the correctness property. It does however not provide a single point of reference to understand a protocols expected behaviour and work flow.
+
+
+\subsection{Domain Specific Languages}
+Another way of solving this problem is to use domain specific languages that provide a syntax to describe and implement a protocol. Examples such as the Language of Temporal Ordering Specification  (LOTOS) \cite{bolognesi1987introduction}, ESTEREL \cite{boussinot1991esterel} and Prolac \cite{kohler1999readable}
+
+LOTOS and ESTEREL where both created by the International Organization for Standardization (ISO) for formal specification of open distributed systems. They were especially created specifying the Open System Interconnection (OSI) reference model \cite{day1983osi}.
+% Reference model OR Architecture?
+\begin{quote}
+	\textit{``The basic idea that LOTOS developed from was that systems can be specified by defining the temporal relation among the interactions that constitute the externally observable behaviour
+of a system''}
+	\begin{flushright}
+		\cite{bolognesi1987introduction}
+	\end{flushright}		
+\end{quote}
+ESTEREL allows you to define finite state machines as protocol implementations. These state machines communicate with each other by broadcasting messages.
+\\
+Prolac is a DSL that has focused much more on providing a DSL that is human readable. They wanted a language that was much more focused on providing the developers with an understanding of a protocol. They argued that most protocol languages were focused on providing testability and verifiability. This would not help during the implementation of the actual protocol. Their language is mostly targeted at low level protocol implementations. Implementations that would for example be used by a operating system.
+\\\\
+What LOTOS and ESTEREL have in common is that they provide the means of specifying a protocol, not implementing one. We can spend a large amount of resources on building a perfect model that entail all possible scenarios and verifies its security. The actual implementation of this protocol could however contain errors. What we would like to have is a DSL that provides us with the following:
+\begin{description}
+  \item[Model] - We require an easy way to understand way to model a protocol
+  \item[Implementation] - Use this model in the implementation   
+  \item[Machine Checkable] - Generate errors when the implementation violates the model
+\end{description}
+
+\subsection{Session Types}
+Session Types are a way to model the communication between multiple parties by using types \cite{dardha2012session}. It ties strongly with $\pi$-calculus. $\pi$-calculus helps us model interactions between parties. Session types adds the type of the message to the model. We define both the type and direction of a message. The advantage of using session types is that it allows us to use a type checker to verify whether we are obeying a protocol. The type checker will provide us with feedback of where we potentially disobey a protocol.
+\\
+Types also help to communicate its intended purpose which increases our reasoning about a system. Types provide us with a great deal of implicit information. For example, a programmer can extrapolate a lot of information when only knowing that the type of a object is a ``String'' or an ``Integer''.
+% Talk about Prolacs low levelness ?
+
+
+% eDSL highly customisable as its written in a host language
+% Model checking time consuming and nobody does it
+% lotus - hard to learn
+
+\iffalse
+They model a protocol - ideal implementation. Perfect model - Erroneous implementation
+from paper to code hope they match up. 
+
+Minimize the leap from  human work, make machine checkable. 
+
+Talk about session types.
+
+
+[1] Mark B. Abbott and Larry L. Peterson. A language-based approach
+to protocol implementation. IEEE/ACM Transactions
+on Networking, 1(1):4–19, February 1993
+
+7 Claude Castelluccia, Walid Dabbous, and Sean O’Malley.
+Generating efficient protocol code from an abstract specification.
+In Proceedings of the ACM SIGCOMM 1996 Conference,
+pages 60–71, August 1996.
+
+10 P. Dembinski and S. Budkowski. Specification language Estelle.
+In Michel Diaz, Jean-Pierre Ansart, Jean-Pierre Courtiat,
+Pierre Azema, and Vijaya Chari, editors, The formal description
+technique Estelle, pages 35–75. North-Holland, 1989.
+
+11 Diane Hernek and David P. Anderson. Efficient automated protocol
+implementation using RTAG. Report UCB/CSD 89/526,
+University of California at Berkeley, August 1989.
+
+17 Linda Ness. L.0: a parallel executable temporal logic language.
+In Mark Moriconi, editor, Proceedings of the ACM SIGSOFT
+International Workshop on Formal Methods in Software Development,
+pages 80–89, September 1990.
+\fi
+

@@ -1,0 +1,140 @@
+\section{Solution}
+\subsection{Defining a protocol}
+One possible way of defining a protocol is to use the syntax shown below. This form of syntax is often used when discussing Session Types. They contain the direction of communication and the type of the message. 
+$$
+\begin{multlined}
+Client \Rightarrow Server : Type \\ 
+Server \Rightarrow Client : Type \\
+end
+\end{multlined}
+$$
+In this protocol the client sends a message to a server. The message that the server receives is to be of a certain type. Examples are: Integers, Strings, Objects etc. After the server has sent its last message, the protocol is over. 
+A simple server that simply repeats the messages it receives, an echo server, would be defined in the following way:
+$$
+\begin{multlined}
+Client \Rightarrow Server : String \\ 
+Server \Rightarrow Client : String \\
+end
+\end{multlined}
+$$
+There is one undesired feature here however. When we reach the end, the connections are closed and we will need to re-establish a connection to send additional messages.
+\subsubsection{Looping protocols}
+Here we wish to once again implement a echo server. To avoid the user needing to reconnect for each message, we need to provide a way of looping the protocol. One approach would be to have a special case where we tell the protocol to go back to a previously defined step.
+$$
+\begin{multlined}
+Client \Rightarrow Server : String \\ 
+Server \Rightarrow Client : String \\ 
+goto \rightarrow 0 \\
+end
+\end{multlined}
+$$
+When our Protocol Monitor now reaches the ``goto'' step, it should return back to step 0 of the protocol. This solution would however quickly become confusing if the number of goto steps was to increase. It is also not easy to know if the index begins on ``0'' or ``1''.
+Also the the definition can become quite verbose when creating longer protocols. Another issue is that the state of both the ``Client'' and ``Server'' is mutated at each line.
+
+\subsubsection{Creating Our Syntax}
+In Scala, we can create a syntax that is very similar to the session type syntax shown above. In the following example we will create two end-points, a client and a server. They will be used to define an echo server. First we need to create an instance of a object which has methods for sending, receiving and looping. For this purpose we have created the class ``ProtocolBuilder''. It contains the necessary functions and attributes needed for defining our protocol.
+%[style=myScalastyle]
+\begin{lstlisting}[style=myScalastyle]
+ val client = new ProtocolBuilder()
+ val server = new ProtocolBuilder()
+\end{lstlisting}
+Once they are created, we can begin to define our protocol.
+\begin{lstlisting}[style=myScalastyle]
+ client send(server, aString)
+ server send(client, aString)
+ server gotoStep 0
+ client gotoStep 0 
+\end{lstlisting}
+The first obvious change is that we have dropped the arrow syntax in favour of ``send'' and ``receive''. Although Scala can support such operators, it would not improve readability. The second change is that we are not using the type ``String'', but ``aString''. We will discuss this later is section {\ref{sec:validator} Validator}, but for now we will assume that ``aString'' is a validation that checks if the message is a string.   
+\\\\
+The main concern with this code is that we must define both the client and server side for each send and receive call. In a real implementation, we would only need to focus on one single end-point. By knowing one end of the protocol, we can construct the opposite protocol. In addition, Scala would allow us to omit the parentheses to increase readability, but not when we have two input parameters.
+\\\\
+Taking the above concerns into consideration, we propose a syntax that avoids this mutability and is less redundant. We have names this syntax the ``ValidProt Syntax'' as is it built around using Validators. 
+
+\subsubsection{ValidProt Syntax -- Better name? Name it at all?}
+The following shows the syntax in our DSL for defining a echo client and server.
+
+\begin{lstlisting}[style=myScalastyle]
+ val endpoint = new ProtocolBuilder()
+ val client  = endpoint sends aString receives aString
+ val server  = endpoint receives aString sends aString
+\end{lstlisting}
+We have removed mutability by making all calls to send or receive return a new instance of a ProtocolBuilder(), this allows us to chain multiple send and receive in one line. This means that the value endpoint is never mutated. With no mutation, we can reuse the endpoint and be assured that it is always a blank starting point for us to use.
+
+To add a loop to the protocol, we add a call to ``looped()'' at the end.
+\begin{lstlisting}[style=myScalastyle]
+ val client = endpoint send aString receive aString looped()
+\end{lstlisting}
+
+Another feature that we have added is that sometimes the order of messages is irrelevant. For example in a chat application, we want the participants to be able to send or receive in any possible order. For allowing this we have implemented the method ``anyone'' that represents sender or receiver is unimportant.
+
+Although protocols are meant to be easy and not contain any complex branching, we have added features that would allow for such protocols.
+
+\subsection{Validator}
+\label{sec:validator}
+For the task of verifying if a message is of the expected type, we have created a class Validator. Validator is a class that contains a single method, ``validate''. This method contains the logic for testing if a message is of the correct and expected type. ``validate'' signature is the following
+\begin{lstlisting}[style=myScalastyle]
+    validate: String => Either[ValidationError, Any]
+\end{lstlisting}
+
+\begin{description}
+ \item[validate] is the name of the method
+ \item[String] is the input type for the method
+ \item[=>] Given the previous input, return the following
+ \item[Either\lbrack Left, Right\rbrack] Either return either a left or right value.
+ \item[ValidationError] Left value is of type ValidationError
+ \item[Any] Right value is of type Any. Any is, what its name suggest, a type that can return anything.
+\end{description}
+The main point extract from this definition is the ``Either'' type. For the Either type, a ``Left'' value is considered undesired while the ``Right'' value is the desired one. In our case we set the undesired case to be ValidationError. Validation Error contains two arguments, a String and an optional Exception. The thought is to set the value of the String to an easy to understand message that will tell us what and where something went wrong. The Exception will provide us with the details of what the specific error was. The ``Right'' value allows us to return an ``Any'' type of object. This object will be delivered directly to the Consumer. Implementations of Consumers can then use pattern matching to reason about a protocols state and flow.
+
+To show the simplicity of defining such Validators we will show some examples. First we will create a validator the verifies that a message can be converted to a String. The input of the ''validator`` is a string, so the message must be valid.
+\begin{lstlisting}[style=myScalastyle]
+  // Return input inside a Right()
+  val aString = new Validator(input => Right(input))
+  // Wrap input inside Username
+  val aUsername = new Validator(input => Right(Username(input)))
+\end{lstlisting}
+As the input of the validator is a String, that means there is no way the validation can fail or be invalid. This allows us to avoid the need of including a ``Left'' value. To help with pattern matching, we can easily wrap this value inside a class. As shown in the value ``Username'' that wraps a string into a Username object.
+
+We can also create more complex Validators that make more complex evaluation of a message. Here we can check if a message can fulfil the requirements of being a ``special number''.
+\begin{lstlisting}[style=myScalastyle]
+  val aSpecialNumber = new Validator(input => try {
+    val number = input.toInt
+    if(isSpecialNumber(number) {
+        Right(SpecialNumber(number))
+    } else {
+        Left("Received message is not a SpecialNumber") 
+    }
+  } catch {
+    case e: Exception =>
+      Left(ValidationError("Received message is not an Integer", e) )
+  })
+\end{lstlisting}
+The method ``isSpecialNumber'' does not need to be defined inside the validator. This is because Scala supports closures. They allow us to reference methods or variables outside the current local scope.
+
+\subsubsection{Encrypted Validation}
+When a message is encrypted a validator will have no way to determine if it is valid. To do so, it would need to acquire the secret key that can decrypt it. The secret key will only be available from the consumer. To deal with this scenario we, have created a special case class DelayedValidator. DelayedValidator allows us to send a message to the consumer for delayed validation. Once the consumer receives this message it will decrypting the message and pass it back to the Protocol Monitor. The Protocol Monitor will then verify whether the message is correct. The reason for solving the problem this way is to allow the validators to still contain most of the logic of wrapping message to classes. This also provides us with consistency as it is always the PM that handles validation.
+
+   
+%Ultimately we will need decide whether we should be able to define conditional steps. For example in the Diffie-Hellman-Merkle protocol, the secure public key must be agreed by both parties. If one client  
+%
+
+%loose coupling with protocol. no inheritance
+
+\subsection{Protocol Monitor}
+The Protocol Monitor tasks have been described in the previous sections. In this section we will broadly explain how our PM solution works.
+\subsubsection{Startup}
+To create an instance of a PM we require 3 things, a message channel to communicate with both the client and the consumer and lastly we need the protocol definition. Once the PM has been started, it sends a ``initiation'' message to the consumer. This will allow the consumer to be the one that initiates communication or to initialise certain resources.
+
+\subsubsection{Message forwarding}
+When the PM receives a message, it will pattern match and either forward the message to the consumer or client. To distinguish between these we have created two wrapper classes, ``ToConsumer'' and ``ToConnection''. The PM will not read or check the data inside these wrappers, it will only check whether it is a Left or Right value. 
+%This is discussed in section \ref{sec:validator} Validator on page \pageref{sec:validator}.
+\subsubsection{Ending the connection}
+When the client disconnects, we tell the Consumer that we that we are done by sending a ``ConnectionFinished(reason)''. Here the value ``reason'' will represent why the connection ended, either the protocol finished or there was an error.
+
+%Talk about how the PM works... How it communicates with the Connection and Consumer. + Initiation, +ErrorHandling, +Connection shutdown
+%
+
+
+
+

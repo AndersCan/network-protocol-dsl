@@ -1,0 +1,13 @@
+\subsection{Protocol Monitor -- Add this section to a Solution sec?}
+The Protocol Monitor tasks have been described in the previous sections. In this section we will broadly explain how our PM solution works.
+\subsubsection{Startup}
+To create an instance of a PM we require 3 things, a message channel to communicate with both the client and the consumer and lastly we need the protocol definition. Once the PM has been started, it sends a ``initiation'' message to the consumer. This will allow the consumer to be the one that initiates communication or to initialise certain resources.
+
+\subsubsection{Message forwarding}
+When the PM receives a message, it will pattern match and either forward the message to the consumer or client. To distinguish between these we have created two wrapper classes, ``ToConsumer'' and ``ToConnection''. The PM will not read or check the data inside these wrappers, it will only check whether it is a Left or Right value. 
+%This is discussed in section \ref{sec:validator} Validator on page \pageref{sec:validator}.
+\subsubsection{Ending the connection}
+When the client disconnects, we tell the Consumer that we that we are done by sending a ``ConnectionFinished(reason)''. Here the value ``reason'' will represent why the connection ended, either the protocol finished or there was an error.
+
+%Talk about how the PM works... How it communicates with the Connection and Consumer. + Initiation, +ErrorHandling, +Connection shutdown
+%

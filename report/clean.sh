@@ -1,0 +1,1 @@
+latexmk head.tex -c
