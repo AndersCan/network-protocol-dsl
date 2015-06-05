@@ -36,11 +36,7 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
   //  })
   //
   val aUsername = new Validator(x => try {
-    if (x.contains("\n")) {
-      Right(x.dropRight(2))
-    } else {
-      Right(Username(x))
-    }
+    Right(Username(x))
   } catch {
     case e: Exception =>
       Left(ValidationError("msg breaks protocol. not a username", e))
