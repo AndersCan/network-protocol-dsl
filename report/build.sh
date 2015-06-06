@@ -1,10 +1,10 @@
 while [ true ]
 do
-  pdflatex head.tex
+  pdflatex -interaction nonstopmode head.tex
   bibtex head.aux
   bibtex head.aux
-  pdflatex head.tex
-  pdflatex head.tex
+  pdflatex -interaction nonstopmode head.tex
+  pdflatex -interaction nonstopmode head.tex
   sleep 30
 done
 	

@@ -1,9 +1,11 @@
 \section{Introduction}
-This section will provide the reader with a general understanding of what a network protocol is, and the issues involved in implementing such protocols.
+In today's modern society we are surrounded by a multitude of devices that are able to communicate with other devices. These devices are usually able to both exchange and receive data. What holds true for most of these devices is that without their ability to communicate, their value would plummet. Imagine a smart-phone that could not call, text or even browse the web. 
+
+Devices that are able to communicate have such great value that almost everyone has access to one. It has become so widespread that it is often taken for granted. Withdrawing money from an ATM, making phone calls or checking your e-mail are all tasks that could not be performed without some form of communication. Like with all forms of communication, we need to have rules that specify how we are to exchange data. Network protocols can be considered the rules that govern the communication between devices. Protocols are created and used for a wide variety of reasons. HTTP \cite{fielding1999hypertext} is an example of such a protocol. Every time a web browser requests information from a web site, it uses the HTTP protocol to both understand how to request information and understand the response it receives.   
 \\\\
 Often a protocol can be both complicated in its concept as it is hard in implementing. Protocols have a strictly defined control flow that specify the response to various types of messages. Protocols often define rules that these messages must obey in order for it to be a valid message. One such rule could for example be that a message sent contains a value that is a prime number. A protocol will usually have an equal amount of message types as they have rules. The resulting implementation of all of these messages and rules can make a code base difficult to understand and obfuscate the protocols control flow in the implementation.
 
-In this paper we have created a domain specific language that will help us in solving this problem. This DSL provides us with a foundation for defining network protocols where the control flow is clear, presise and syntactically easy to understand. 
+In this paper we have created a domain specific language that will help us in solving this problem. This DSL provides us with a foundation for defining network protocols where the control flow is clear, precise and syntactically easy to understand. 
 
 \subsection{Issues with Implementation}
 The perhaps greatest problem faced when a protocol does not conform to its rules, is that sensitive information might be leaked. In recent years, two such failures have occurred and received large media coverage. Namely Heartbleed \cite{durumeric2014matter} and Apples Goto bug \cite{bland2014finding}. Failure to correctly implement a security protocol may  cause irreparable damage on a companies trustworthiness and reputation.
@@ -15,16 +17,18 @@ Some of the key issues involved with implementing a network protocol are
   \item Matching the complexity of the protocol with its implementation
 \end{enumerate}
 
-\subsection{Why We Need Network Protocols}
-The goal of a network protocol is to allow computers to have a standardised way of communicating with each other. This protocol gives us a shared vocabulary as it contains the definitions for the various aspects contained within the protocol. Without protocols, computers would not be able to communicate. Implementing a simple ``Hello World'' web server would be impossible. While one type of web browser may request the data as ``GET /index.html'', another might request it as ``FETCH /index.html''. The truth is, however, these request would never actually reach the web server. Without any form of protocol we can't expect to send a request over the internet. Specifically, without the TCP/IP protocol \cite{clark1988design}, we would have no way of sending requests/packets over the web.
+\subsection{Why we need network protocols}
+The goal of a network protocol is to allow computers to have a standardised way of communicating with each other. This protocol gives us a shared vocabulary as it contains the definitions for the various aspects contained within the protocol. Without protocols, computers would not be able to communicate. Implementing a simple ``Hello World'' web server would be impossible. While one type of web browser may request the data as ``GET /index.html'', another might request it as ``FETCH /index.html''. The truth is, however, these request would never actually reach the web server. Without any form of protocol, we can't expect to send a request over the internet. Specifically, without the TCP/IP protocol \cite{clark1988design}, we would have no way of sending requests to the web server.
 
-\subsubsection{Security}
-As stated above, using protocols allows for machines to communicate. We can also add security protocols to the mix and ensure that only the intended parties are able to decipher our secure messages. Without this security, we would not be able to use any form of secure online authentication.
+\subsubsection{Cryptographic protocols}
+As stated above, using protocols allows for machines to communicate. Cryptographic protocols allows us to encrypt our communication. Using a cryptographic protocol will ensure that only the intended recipients are able to decipher our messages. This means that if someone is reading your messages, they will not be able to decipher it. This security is what allows us to authenticate ourselves online so that we have access to sensitive information.
 
-\subsubsection{Power in numbers}
-A key benefit of using a popular network protocol is that you are using a protocol that others have tested and implemented before. If you encounter problems you can ask for help and use a common vocabulary when doing so. Academia will often set out to test if protocol implementations are as secure we assume. If they discover any defects, they will publish information regarding the security threat. This will allow those who use the protocol to update their implementation and remove the threat from their systems.
-\\
-Diffie-Hellman-Merkle \cite{diffie1976new} is a security protocol used for allowing two parties to establish a secure connection. The protocol was created in 1976 and is still widely used to this day. After over 30 years of widespread usage we could imagine that we have perfected the implemention, we would have perfected its implementation. This is unfortunately not the case. A paper published in May of 2015 showcased vulnerabilities in the real world implementations of the DHM protocol. The vulnerability named ``LogJam'' in the paper ``Imperfect Forward Secrecy: How Diffie-Hellman Fails in Practice'' \cite{logjam2015}. This paper explains what the security issues are, what types of systems are affected and what you can do to protect yourself. Had you written your own protocol, you would have to verify its integrity on your own.  
+\subsubsection{Protocol reuse}
+A key benefit of reusing a popular network protocol is that you are using a protocol that others have tested and implemented before. If you encounter problems you can ask for help and use a common vocabulary when doing so.
+
+Academia will often set out to test if protocol description or implementation is as secure as it claims to be. If they discover any defects, they will publish information regarding the security threat. This will allow those who use the protocol to update their implementation and remove the threat from their systems.
+
+Diffie-Hellman-Merkle \cite{diffie1976new} is a security protocol used for allowing two parties to establish a secure connection. The protocol was created in 1976 and is still widely used to this day. After over 30 years of widespread usage we could imagine that we have perfected the implementation. This is unfortunately not the case. A paper published in May of 2015 showcased vulnerabilities in the real world implementations of the DHM protocol. The vulnerability was named ``LogJam'' by the authors of the paper ``Imperfect Forward Secrecy: How Diffie-Hellman Fails in Practice'' \cite{logjam2015}. This paper explains what the security issues are, what types of systems are affected and what you can do to protect yourself. Had you written your own protocol, you would have to verify its integrity on your own.  
 
 %https://weakdh.org/imperfect-forward-secrecy.pdf
 %https://weakdh.org/?utm_content=buffer6ce9c&utm_medium=social&utm_source=twitter.com&utm_campaign=buffer
@@ -36,28 +40,21 @@ and system implementers, there is evidence that suggests
 the way we are using Diffie-Hellman in today’s protocols is
 insufficient to protect against state-level actors
 \fi
-\subsection{Embedded Domain Specific Language}
-A domain specific language (DSL) \cite{fowler2010domain} is a computer language that solves the problem of a specific domain. The DSL language does not have its own complier, but is instead converted to a different language which does have a compiler. The DSL source files are parsed into an abstract syntax tree(AST) and then outputted as a general purpose language. Languages such as Java, C++ or C\# are general purpose languages. What these types of languages have in common is that they provide a foundation for solving multiple domains. DSLs however are targeted at specific domains, and can often only be used for their intended purpose. Two popular examples of DSLs are Structured Query Language (SQL) and HyperText Markup Language (HTML) \cite{mernik2005and}.
+
+\subsection{Domain Specific Language}
+A domain specific language (DSL) \cite{fowler2010domain} is a computer language that solves the problem of a specific domain. DSL does often not have its own compiler, but is instead converted to a different language which does. The DSL source files are parsed into an abstract syntax tree (AST) and then outputted as a general purpose language. Languages such as Java, C++ or C\# are examples of general purpose languages. What these types of languages have in common is that they provide a foundation for solving multiple domains. DSLs are however targeted at specific domains, and can often only be used within their intended environment. Two popular examples of DSLs are Structured Query Language (SQL) and HyperText Markup Language (HTML) \cite{mernik2005and}. SQL is used for querying data from a database while HTML is used for designing a web page.
+
 \subsubsection{Benefits and Disadvantages}
-The main benefit of using a DSL is its ability to provide a written language that is equivalent to the spoken language. The DSL can then become self-documenting as it should be easy to extract the purpose of a block of code.
-\\\\
-The disadvantage is that it takes a considerable amount of time and effort to create a DSL. One must define a grammar for the language, build an AST, then finally convert the AST to the source code for a compilable language. Another significant disadvantage is that this DSL is a new language. New developers are unlikely to have any previous experience with this language and there are no integrated development environments. The DSL will also add an extra step to debugging. There may be issues involved with the actual conversion from the DSL to the compiled language. These are generally errors that are hard to detect. The error may be in the actual usage or understanding of the DSL, performing actions that were unintended. This bring us to our final disadvantage, designing for change. A DSL is created to solve a specific task. If that task changes over time, the DSL must be updated or in the worst case, rewritten. 
+The main benefit of using a DSL is its ability to provide a written language that is equivalent to the spoken language. The DSL can then become self-documenting as it should be easy to extract the purpose of a block of code. We are also completely free to define the languages rules and grammar. We can create a language that is a 1:1 match of the spoken language used in the domain.
+
+The disadvantage is that it takes a considerable amount of time and effort to create a DSL. One must define a grammar for the language, build an AST, then finally convert the AST to the source code for a compileable language. Another significant disadvantage is that this DSL is a new language. New developers are unlikely to have any previous experience with this language and there are no integrated development environments. The DSL will also add an extra step to debugging. There may be issues involved with the actual conversion from the DSL to the compiled language. These are generally errors that are hard to detect. The error may be in the actual usage or understanding of the DSL, performing actions that were unintended. This bring us to our final disadvantage, designing for change. A DSL is created to solve a specific task. If that task changes over time, the DSL must be updated or in the worst case, rewritten. 
 \\\\
 %we will be able to define a protocol and specify its rules in a coherent and self-explanatory fashion. 
-An Embedded DSL does not have all these disadvantages however. The word ``embedded'' means that we are writing our DSL inside a host language. The DSL we write is then valid syntax for the host language. This removes a lot of the disadvantages with writing DSL, but severely limits us in our ability to freely express ourselves. This limitation is entirely dependant of the host language, some may be more limiting then others.
-\\
+\subsubsection{Embedded DSL}
+An Embedded DSL does not have all these disadvantages nor does it have all the advantages. It is a trade-off between being able to freely create your own grammar and abiding by the rules of the host language. The word ``embedded'' means that we are writing our DSL inside a host language. The DSL we write is then valid syntax for the host language. This removes a lot of the disadvantages with writing a DSL, but severely limits us in our ability to freely express ourselves. This limitation is entirely dependent of the host language, some may be more limiting then others.
+
 We will create an eDSL to attempt to alleviate the complexity that developers face during implementation of network protocols. Our eDSL will try to enable a work flow guided by encapsulation. It will achieve this property by decomposing the complexity of the overall protocol into smaller elements. Ideally these elements will only have a single task to perform and will abide by the following rule: one input, one output. 
 
-
-
-\iffalse
-
-More background
-Objectives
-Why we need network protocols
-Motivation
-Explain DiffieHellman
-\fi
 
 % Can I change the wording of the objective to better match my actual implementation? 
 
@@ -103,10 +100,10 @@ over a public network.
 \subsection{Report Structure}
 \begin{description}
   \item[Introduction] - Provides a high level view of the description of the problem.
-  \item[Related Work] - Information regarding related work to this topic
   \item[Background] - Useful background information the reader should know
-  \item[Tools] - The tools we decided to use to create our DSL
-  \item[Initial Architecture] - Describes a birds eye view of out initial solution
+  \item[Architecture] - Describes a birds eye view of out initial solution
+  \item[Solution] - Information on our solution operates 
+  \item[Protocol - Implementations] - Protocols implemented with our DSL
   \item[Evaluation] - Critical and objective evaluation of our work 
   \item[Conclusion] - Summarizes our paper and proposes future work.
 \end{description}

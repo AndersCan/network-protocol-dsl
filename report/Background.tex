@@ -2,8 +2,8 @@
 
 \subsection{Network Protocols}
 Network protocols are a set of rules that strictly define the order and content of messages passed between users over a network. Often these protocols are used to define how to establish a secure and encrypted connection. As these protocols grow in complexity, it becomes increasingly complicated to implement them. After an implementation we must also ensure that it adheres to the rules of the protocol. Dealing with such issues can cause implementations to become unnecessary complicated and confuse a developers overall understanding of the system. Specifically how the state of a protocol mutates through its life cycle, when it is given various forms of input input.
-\\\\
-Failure to encapsulate this inherent complexity will make the overall software system hard to evolve. When new security threats and weaknesses are discovered, companies must act swiftly and update their implementation. Making changes without a good overall understanding of the system will lead to software ageing \cite{parnas1994software}. Software systems must always evolve to meet the demands set by their stakeholders. Complicated solutions makes it hard for a developer to add new or change existing features. Changes made can have unforeseen consequences when these changes are made by those that do not understand the system.
+
+Failure to encapsulate this complexity will make the overall software system hard to evolve. When new security threats and weaknesses are discovered, companies must act swiftly and update their implementation. Making changes without a good overall understanding of the system will lead to software ageing \cite{parnas1994software}. Software systems must always evolve to meet the demands set by their stakeholders. Complicated solutions makes it hard for a developer to add new or change existing features. Changes made can have unforeseen consequences when these changes are made by those that do not understand the system.
 
 \subsection{Model Checking}
 One possible approach to verifying whether a protocol implementation is conformant to its specification is to use a model checker. In the paper Model Checking Large Network Prototocol Implementation \cite{musuvathi2004model}, Madanlal Musuvathi and Dawsone R. Engler explain how they used their model checker, C Model Checker (CMC) \cite{musuvathi2002cmc} to check the Linux TCP/IP implementation. 
@@ -12,13 +12,12 @@ Unlike many other model checkers, CMC does not operate on an abstracted version/
 
 Their model checker works by exploring a protocols state space by simulating events to create new states. These states are then checked against a ``Correctness Property'' that has been defined. They argue that many system errors only occur after certain events have occurred. These state spaces can often be exponentially large and can make it impossible to search the entire state space\footnote{This problem is often referred to as ``State Space Explosion''}. This problem can lead to edge cases where an erroneous state is not detected.
 \\\\
-Their solution ultimately verifies if the system at certain points in the code is correct by using the correctness property. It does however not provide a single point of reference to understand a protocols expected behaviour and work flow.
-
+Their solution ultimately verifies if the system at certain points in the code is correct by using the correctness property. It does however not provide a single point of reference to understand a protocols expected behaviour or work flow.
 
 \subsection{Domain Specific Languages}
-Another way of solving this problem is to use domain specific languages that provide a syntax to describe and implement a protocol. Examples such as the Language of Temporal Ordering Specification  (LOTOS) \cite{bolognesi1987introduction}, ESTEREL \cite{boussinot1991esterel} and Prolac \cite{kohler1999readable}
+Another way of solving this problem is to use domain specific languages that provide a syntax to describe a protocol. Examples such as the Language of Temporal Ordering Specification  (LOTOS) \cite{bolognesi1987introduction}, ESTEREL \cite{boussinot1991esterel} and Prolac \cite{kohler1999readable}
 
-LOTOS and ESTEREL where both created by the International Organization for Standardization (ISO) for formal specification of open distributed systems. They were especially created specifying the Open System Interconnection (OSI) reference model \cite{day1983osi}.
+LOTOS and ESTEREL where both created by the International Organization for Standardization (ISO) for formal specification of open distributed systems. They were specifically created for specifying the Open System Interconnection (OSI) reference model \cite{day1983osi}.
 % Reference model OR Architecture?
 \begin{quote}
 	\textit{``The basic idea that LOTOS developed from was that systems can be specified by defining the temporal relation among the interactions that constitute the externally observable behaviour
@@ -33,15 +32,15 @@ Prolac is a DSL that has focused much more on providing a DSL that is human read
 \\\\
 What LOTOS and ESTEREL have in common is that they provide the means of specifying a protocol, not implementing one. We can spend a large amount of resources on building a perfect model that entail all possible scenarios and verifies its security. The actual implementation of this protocol could however contain errors. What we would like to have is a DSL that provides us with the following:
 \begin{description}
-  \item[Model] - We require an easy way to understand way to model a protocol
+  \item[Model] - We require an easy way to specify a model of a protocol
   \item[Implementation] - Use this model in the implementation   
   \item[Machine Checkable] - Generate errors when the implementation violates the model
 \end{description}
 
 \subsection{Session Types}
-Session Types are a way to model the communication between multiple parties by using types \cite{dardha2012session}. It ties strongly with $\pi$-calculus. $\pi$-calculus helps us model interactions between parties. Session types adds the type of the message to the model. We define both the type and direction of a message. The advantage of using session types is that it allows us to use a type checker to verify whether we are obeying a protocol. The type checker will provide us with feedback of where we potentially disobey a protocol.
-\\
-Types also help to communicate its intended purpose which increases our reasoning about a system. Types provide us with a great deal of implicit information. For example, a programmer can extrapolate a lot of information when only knowing that the type of a object is a ``String'' or an ``Integer''.
+Session Types are a way to model the communication between multiple parties by using types \cite{dardha2012session}. It ties strongly with $\pi$-calculus. $\pi$-calculus helps us model interactions between parties. Session types adds the type of the message to the model. We define both the type and direction of a message. The advantage of using session types is that it allows us to use a type checker to verify whether we are obeying a protocol. The type checker will provide us with feedback at compile time of where we have potentially disobeyed a protocol.
+
+Types also help to communicate a messages intended purpose which increases our reasoning about the control flow. Types provide us with a great deal of implicit information. For example, a we can extrapolate a lot of information when only knowing that the type of a object is a ``String'', an ``Integer'' or a ``Person'' class.
 % Talk about Prolacs low levelness ?
 
 
@@ -49,17 +48,8 @@ Types also help to communicate its intended purpose which increases our reasonin
 % Model checking time consuming and nobody does it
 % lotus - hard to learn
 
-\subsection{Network Protocols}
-A protocol is defined by the Oxford dictionary as:
-\begin{quote}
-	\textit{``The accepted or established code of procedure or behaviour in any group, organization, or situation''}
-	\begin{flushright}
-		Oxford Dictonary%\cite{} % Find book and cite
-	\end{flushright}
-\end{quote}
-
-
-Network protocols are a set of rules that strictly govern behaviour. A network protocol is expected to have a predetermined (deterministic) outcome for any given input. Without this determinism, implementation of such a protocol would prove to be difficult, if not impossible. Rules are often expressed as a protocol specification. How one creates this specification is entirely up to the author of the protocol. Often it is expressed as a combination of mathematical equations with diagrams and descriptions.  All that is desired is that the specification is clear, concise and unambiguous.
+\subsection{Security Protocols}
+A network protocol is expected to have a predetermined (deterministic) outcome for any given input. Without this determinism, implementation of such a protocol would prove to be difficult, if not impossible. Rules are often expressed as a protocol specification. How one creates this specification is entirely up to the author of the protocol. Often it is expressed as a combination of mathematical equations with diagrams and descriptions.  All that is desired is that the specification is clear, concise and unambiguous.
 \subsubsection{Kerberos}
 One popular and widely used network protocol is the Kerberos protocol \cite{steiner1988kerberos}. Kerberos describes the protocol in which a user can authenticate itself with a single server to gain access to multiple services a process known as single sign-on. Kerberos sends many messages over the network that are encrypted with various encryption keys. To better document the information being sent and encryption keys used on this information, they would use the following syntax:
 $$
@@ -79,12 +69,14 @@ This syntax provides the desired features of being clear, concise and unambiguou
 
 \subsubsection{Diffie-Hellman-Merkle}
 \label{sec:dhm}
-The Diffie-Hellman-Merkle (DHM) key exchange \cite{diffie1976new} is a protocol for establishing a secure and encrypted communication channel among two parties. DHM does not require that the two parties have any values pre-shared or predetermined. DHM is built on one way functions: functions that are easy to do, but hard to undo. An example often used to convey this type of function is to imagine mixing paint of two different colours together. After the paint is mixed, try to undo the mixing and return the paint to their original colours.
+The Diffie-Hellman-Merkle (DHM) key exchange \cite{diffie1976new} is a protocol for establishing a secure and encrypted communication channel among two parties. DHM does not require that the two parties have any values pre-shared or predetermined. DHM is built on one way functions: functions that are easy to perform, but hard to undo. An example often used to convey this type of function is to imagine mixing paint of two different colours together. Mixing the paint is easy, but separating them afterwards if very difficult.
 \\\\
 DHM works much in the same way, but instead of paint we use mathematics, namely discrete logarithm. The discrete logarithm is the number (k) that solves the equation $ a^k = b $. There does not exist any efficient way of determining the value for ``k'', DHM is based on this fact.
-\\
-DHM works like this: Alice and Bob publicly agree on a prime modulus and a generator, $Prime$ and $Gen$. Alice and Bob then choose a private random number each, ${Ran_{Alice}}$ and ${Ran_{Bob}}$. Alice and Bob then solves the following equation: $Gen^Ran \bmod Prime = B$ and exchange their result. Up until this point, all communication has been public, the only the random number $Ran$ is a secret.
-\\
+
+DHM works like this: Alice and Bob publicly agree on a prime modulus and a generator, $Prime$ and $Gen$. Alice and Bob then choose a private random number each, ${Ran_{Alice}}$ and ${Ran_{Bob}}$. This private key is known only by the person that generated it and it is vital this key remains a secret.
+
+Alice and Bob then solves the following equation: $Gen^{Ran} \bmod Prime = B$ and exchange their result. Up until this point, all communication has been public, the only the random number $Ran$ is a secret.
+
 When Alice receives Bob's computed $B$ value, she can generate the secret key that they will use for their connection.
 $$
   B^{Ran_{Alice}} \bmod p = SecretKey
