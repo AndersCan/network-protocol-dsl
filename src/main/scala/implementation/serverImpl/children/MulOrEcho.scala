@@ -1,7 +1,7 @@
 package implementation.serverImpl.children
 
 import akka.actor.{Actor, Props}
-import com.protocoldsl.actors.{ChildFinished, SendToConnection, ToChildMessage}
+import com.protocoldsl.actors.{ChildFinished, ToConnection, ToChildMessage}
 
 /**
  * Created by anders on 04/03/15.
@@ -36,17 +36,17 @@ class MulOrEcho extends Actor {
         case IsInt(n) if isFirstNum =>
           firstNum = n;
         case IsInt(n) =>
-          sender() ! SendToConnection(s"${firstNum * n}\r\n")
+          sender() ! ToConnection(s"${firstNum * n}\r\n")
       }
       isFirstNum = !isFirstNum
     case a =>
-      sender() ! SendToConnection(s"$a\r\n")
+      sender() ! ToConnection(s"$a\r\n")
       sender() ! ChildFinished
   }
 
   def echoServer: Receive = {
     case ToChildMessage(data) =>
-      sender() ! SendToConnection(data + "\n")
+      sender() ! ToConnection(data + "\n")
     case _ => sender() ! ChildFinished
   }
 }

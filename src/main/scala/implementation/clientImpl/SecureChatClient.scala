@@ -59,7 +59,7 @@ class SecureChatClient() extends Actor {
       // send prime
       //println(s"PrivateKey: $privateKey")
       //println(s"Sending prime: $prime and generator $generator")
-      pm ! SendToConnection( s"""{ "prime" : "$prime", "generator" : "$generator" } """)
+      pm ! ToConnection( s"""{ "prime" : "$prime", "generator" : "$generator" } """)
       context become WaitingForPubkey
     case ProtocolEnded => sender() ! ChildFinished
     case err@_ =>
@@ -70,7 +70,7 @@ class SecureChatClient() extends Actor {
     case PubKey(pk) =>
       myPublicKey = scala.math.pow(generator, privateKey) % prime
       //      println(s"Sending MyPubKey: $myPublicKey")
-      sender() ! SendToConnection( s""" { "publickey": "$myPublicKey" } """)
+      sender() ! ToConnection( s""" { "publickey": "$myPublicKey" } """)
       sharedSecret = scala.math.pow(pk, privateKey) % prime
       //      println(s"Shared Secret: ($receivedValue^$privateKey) % $prime")
       //      println(s"Shared Secret: ${sharedSecret.toString}")
@@ -78,7 +78,7 @@ class SecureChatClient() extends Actor {
       // Send username
       context become ChatRoom
       val encryptedusername = encrypt(username)
-      sender() ! SendToConnection(encryptedusername)
+      sender() ! ToConnection(encryptedusername)
     case err@_ => failure(err)
   }
 
@@ -108,7 +108,7 @@ class SecureChatClient() extends Actor {
     case cm@ChatMessage(from, to, msg) =>
       connectedUsers(from) ! cm
 
-    case SendToConnection(body) => pm ! SendToConnection(encrypt(body))
+    case ToConnection(body) => pm ! ToConnection(encrypt(body))
     case err@_ => failure(err)
   }
 

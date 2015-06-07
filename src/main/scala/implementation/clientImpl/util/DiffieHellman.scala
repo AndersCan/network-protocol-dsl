@@ -1,7 +1,7 @@
 package implementation.clientImpl.util
 
 import akka.actor.{Actor, Props}
-import com.protocoldsl.actors.SendToConnection
+import com.protocoldsl.actors.ToConnection
 import implementation.clientImpl.ChatMessage
 import org.jasypt.util.text.BasicTextEncryptor
 
@@ -38,14 +38,14 @@ class DiffieHellman(ourUsername: String, theirUsername: String) extends Actor {
       println(s"Starting a secure Communication with user: $theirUsername")
       // Start DiffieInit
       val diffieInit = s""" { "token" : "SecureInit", "header" : "Prime", "from" : "$ourUsername", "to" : "$theirUsername", "number" : $prime2 } """
-      sender() ! SendToConnection(diffieInit)
+      sender() ! ToConnection(diffieInit)
       myPublicKey2 = scala.math.pow(GENERATOR, privateKey2) % prime2
     case Prime(p) =>
       prime2 = p
       myPublicKey2 = scala.math.pow(GENERATOR, privateKey2) % prime2
       //println(s"Sending myPublickey: $myPublicKey2")
       val jsonpubkey = s"""{ "token" : "SecureInit", "header" : "PubKey", "from" : "$ourUsername", "to" : "$theirUsername",  "number" : "$myPublicKey2" }"""
-      sender() ! SendToConnection(jsonpubkey)
+      sender() ! ToConnection(jsonpubkey)
     case PublicKey(pk) =>
       if (!chatsecure) {
         //println(s"Received public key: $pk")
@@ -55,12 +55,12 @@ class DiffieHellman(ourUsername: String, theirUsername: String) extends Actor {
 //        println(s"Shared ChatSecret: ${sharedSecret2.toString}")
         chatEncryptor.setPassword(sharedSecret2.toString)
         val jsonpubkey = s"""{ "token" : "SecureInit", "header" : "PubKey", "from" : "$ourUsername", "to" : $theirUsername, "number" : "$myPublicKey2" }"""
-        sender() ! SendToConnection(jsonpubkey)
+        sender() ! ToConnection(jsonpubkey)
       } else {
         println("Secure communication opened")
         println("Sending encrypted message...")
         val jsonchatmsg = s"""{ "token" : "ChatMessage", "from" : "$ourUsername", "to" : $theirUsername, "msg" : "${chatEncryptor.encrypt("Hello my dear friend")}" }"""
-        sender() ! SendToConnection(jsonchatmsg)
+        sender() ! ToConnection(jsonchatmsg)
       }
     case ChatMessage(from, to, msg) =>
       println(s"We got a message from $from")

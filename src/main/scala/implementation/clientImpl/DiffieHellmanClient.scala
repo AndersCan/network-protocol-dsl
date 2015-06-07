@@ -32,7 +32,7 @@ class DiffieHellmanClient() extends Actor {
     case Initiation =>
       println(s"PrivateKey: $privateKey")
       println(s"Sending prime: $prime")
-      sender() ! SendToConnection(s"$prime")
+      sender() ! ToConnection(s"$prime")
       context become waitingForPubkey
     case ProtocolEnded => sender() ! ChildFinished
     case _ =>
@@ -45,7 +45,7 @@ class DiffieHellmanClient() extends Actor {
       println(s"Received PubKey: $receivedValue")
       myPublicKey = scala.math.pow(generator, privateKey) % prime
       println(s"Sending MyPubKey: $myPublicKey")
-      sender() ! SendToConnection(myPublicKey.toString)
+      sender() ! ToConnection(myPublicKey.toString)
       sharedSecret = scala.math.pow(receivedValue, privateKey) % prime
       println(s"Shared Secret: ($receivedValue^$privateKey) % $prime")
       println(s"Shared Secret: ${sharedSecret.toString}")
@@ -58,10 +58,10 @@ class DiffieHellmanClient() extends Actor {
   }
 
   def secureCom: Receive = {
-    case "START" => sender() ! SendToConnection(encrypt("Starting communication..."))
+    case "START" => sender() ! ToConnection(encrypt("Starting communication..."))
     case ToChildMessage(data) =>
       val encrypted = encrypt("Hello From Client -- Secure Communication")
-      sender() ! SendToConnection(encrypted)
+      sender() ! ToConnection(encrypted)
     case err@_ => failure(err)
   }
 

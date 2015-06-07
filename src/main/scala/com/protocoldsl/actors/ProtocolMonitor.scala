@@ -14,7 +14,7 @@ object ProtocolMonitor {
 
 case class ToChildMessage(data: Any)
 
-case class SendToConnection(data: String)
+case class ToConnection(data: String)
 
 case class ProtocolEnded(reason: Any)
 
@@ -38,7 +38,7 @@ class ProtocolMonitor(protocol: Protocol, connection: ActorRef, consumer: ActorR
 
   def receive = {
 
-    case SendToConnection(data) =>
+    case ToConnection(data) =>
       val msg = protocol.validateSendMessage(data)
       if (msg.isRight) {
         connection ! Write(ByteString.fromString(data))
@@ -70,7 +70,8 @@ class ProtocolMonitor(protocol: Protocol, connection: ActorRef, consumer: ActorR
     case PeerClosed =>
       initiateStop(PeerClosed)
     case ChildFinished =>
-      stopSelf()
+      connection ! Close
+      context become waitingForShutdown
     case err@ErrorClosed(msg) =>
       // Connection closed/reset by client
       initiateStop(err)
@@ -84,15 +85,16 @@ class ProtocolMonitor(protocol: Protocol, connection: ActorRef, consumer: ActorR
   }
 
   def waitingForShutdown: Receive = {
-    case SendToConnection(data) =>
+    case ToConnection(data) =>
+      // Allow Error message to be sent to client
       connection ! Write(ByteString.fromString(data))
     case ChildFinished =>
-      stopSelf()
-    case _ => //println("Ignoring received msg")
-  }
-
-  def stopSelf() = {
-    self ! PoisonPill
+      self ! PoisonPill
+    case PeerClosed =>
+      self ! PoisonPill
+      println("CLOSED PM")
+    case Closed => // Closed
+    case err@_ => println(s"Ignoring received msg: $err")
   }
 
   override def preStart() = {

@@ -5,7 +5,7 @@ package implementation.serverImpl.performance
  */
 
 import akka.actor.{Actor, Props}
-import com.protocoldsl.actors.{ChildFinished, Initiation, SendToConnection}
+import com.protocoldsl.actors.{ChildFinished, Initiation, ToConnection}
 import com.protocoldsl.protocol.ValidationError
 
 case class EchoMessage(text: String)
@@ -19,7 +19,7 @@ class EchoServerActor extends Actor {
   def receive = {
 
     case EchoMessage(data) =>
-      sender() ! SendToConnection(data)
+      sender() ! ToConnection(data)
     case Initiation =>
       println("Starting...")
     case ValidationError(msg, exception) =>

@@ -39,7 +39,7 @@ class DiffieHellmanServer extends Actor {
       prime = receivedValue
       myPublicKey = scala.math.pow(generator, privateKey) % prime
       println(s"Sending MyPubKey: $myPublicKey")
-      sender() ! SendToConnection(myPublicKey + "\r\n")
+      sender() ! ToConnection(myPublicKey + "\r\n")
       context become WaitingForPubKey
     case err@_ => failure(err)
   }
@@ -61,7 +61,7 @@ class DiffieHellmanServer extends Actor {
     case ToChildMessage(data) =>
       println(s"Encrypted message is ${data.toString}")
       println(s"Secret message is ${textEncryptor.decrypt(data.toString)}")
-      sender() ! SendToConnection("server reply\r\n")
+      sender() ! ToConnection("server reply\r\n")
     case err@_ => failure(err)
   }
 

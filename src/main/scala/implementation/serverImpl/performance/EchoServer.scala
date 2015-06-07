@@ -4,6 +4,7 @@ import java.net.InetSocketAddress
 
 import akka.actor.{PoisonPill, Actor, Props}
 import akka.io.{IO, Tcp}
+import akka.util.ByteString
 
 /**
  * Created by anders on 04/03/15.
@@ -50,15 +51,25 @@ class SimplisticHandler extends Actor {
   def receive = {
     case Received(data) =>
       //      println("Server Got data...")
-      sender() ! Write(data)
+      println("Okay..")
+      println(data.utf8String)
+      sender() ! Write(ByteString.fromString("HTTP/1.0 200 OK\nContent-Type:text/html;\n\n <html> <body> <h1> Hello </h1> </body> </html> "))
+      //self ! PoisonPill
+      sender() ! Close
     case PeerClosed => context stop self
     case ErrorClosed(err) =>
       println("Connection closed")
+      self ! PoisonPill
+    case Closed =>
+      // finished
       self ! PoisonPill
     case err@_ => println("unknown msg: " + err)
   }
 
   override def preStart(): Unit = {
     println("Starting...")
+  }
+  override def postStop(): Unit = {
+    println("Stopping...")
   }
 }

@@ -58,7 +58,7 @@ class SecureChatServer extends Actor {
       generator = g
       myPublicKey = scala.math.pow(generator, privateKey) % prime
       //      println(s"Sending MyPubKey: $myPublicKey")
-      sender() ! SendToConnection( s""" { "publickey": "$myPublicKey" } """)
+      sender() ! ToConnection( s""" { "publickey": "$myPublicKey" } """)
       context become WaitingForPubKey
     case err@_ => failure(err)
   }
@@ -102,7 +102,7 @@ class SecureChatServer extends Actor {
       //      println(s"To: $to")
       if (to == username || to == "ALL") {
         //println(s"Sending encrypted message to: $username")
-        pm ! SendToConnection(encrypt(input))
+        pm ! ToConnection(encrypt(input))
       }
 
     case err@_ => failure(err)
