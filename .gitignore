@@ -20,3 +20,7 @@ project/plugins/project/
 .idea/*
 *.iml
 .idea/modules/network-protocol-dsl.iml
+
+# Latex
+report/*.aux
+report/head.*

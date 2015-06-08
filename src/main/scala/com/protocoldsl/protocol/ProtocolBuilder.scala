@@ -9,7 +9,7 @@ package com.protocoldsl.protocol
  * @param message plain text error message
  * @param exception optional Exception thrown
  */
-case class ValidationError(message: String, exception: Exception = throw new Exception("Exception Not Set"))
+case class ValidationError(message: String, exception: Exception = new Exception("Exception Not Set"))
 
 sealed case class Validator(f: String => Either[ValidationError, Any])
 
@@ -146,6 +146,11 @@ class ProtocolBuilder(val states: List[MessageType]) {
     new Protocol(states)
   }
 
+  override def toString(): String = {
+    states.toString()
+  }
+
+
 }
 
 class Protocol(var protocolStates: List[MessageType]) {
@@ -196,5 +201,8 @@ class Protocol(var protocolStates: List[MessageType]) {
       case _ =>
         sys.error("unknown message type received in Protocol")
     }
+  }
+  override def toString(): String = {
+    protocolStates.toString()
   }
 }

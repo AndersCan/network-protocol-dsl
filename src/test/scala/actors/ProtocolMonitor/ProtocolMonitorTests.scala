@@ -20,9 +20,10 @@ class ProtocolMonitorTests(_system: ActorSystem) extends TestKit(_system) with I
     TestKit.shutdownActorSystem(system)
   }
 
-
+  val defaultException = new Exception("Default Exception")
   val isAnything = new Validator(x => Right(x))
-  val isNothing = new Validator(_ => Left(ValidationError("isNothing will always give a Left result")))
+  val isNothing = new Validator(_ => Left(ValidationError("isNothing will always give a Left result", defaultException)))
+
   val simpleMessage = ByteString.fromString("Simple message")
 
   "The ProtocolMaster actor" must {
@@ -32,8 +33,9 @@ class ProtocolMonitorTests(_system: ActorSystem) extends TestKit(_system) with I
       val proto = (new ProtocolBuilder() receives isAnything).compile
       val handler = system.actorOf(ProtocolMonitor.props(proto, connection.ref, child.ref))
 
+      child expectMsg(5000.millis, Initiation)
       handler ! Received(simpleMessage)
-      child expectMsg(5000.millis, ToChildMessage("Simple message"))
+      child expectMsg(5000.millis, "Simple message")
     }
   }
   it must {
@@ -42,6 +44,10 @@ class ProtocolMonitorTests(_system: ActorSystem) extends TestKit(_system) with I
       val connection = TestProbe()
       val proto = (new ProtocolBuilder() sends isNothing).compile
       val handler = system.actorOf(ProtocolMonitor.props(proto, connection.ref, child.ref))
+
+      // TODO Race condition to if Initiation or Error occurs first @ PM
+      // Ignoring received msg: Initiation
+      child expectMsg(5000.millis, Initiation)
       handler ! Received(simpleMessage)
       child expectMsgClass(5000.millis, ProtocolEnded("").getClass)
     }
@@ -58,7 +64,7 @@ class ProtocolMonitorTests(_system: ActorSystem) extends TestKit(_system) with I
     }
   }
   it must {
-    "must not forward a invalid message from child to connection" in {
+    "not forward a invalid message from child to connection" in {
       val child = TestProbe()
       val connection = TestProbe()
       val proto = (new ProtocolBuilder() receives isNothing).compile
