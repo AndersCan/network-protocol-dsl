@@ -1,5 +1,5 @@
-\section{Implementation of DHM}
-\subsection{Introduction}
+\section{Protocol Implementations}
+\subsection{Diffie-Hellman-Merkel}
 In this section we will implement a Echo server that uses the Diffie-Hellman-Merkle key exchange to secure the communication channel. The focus of the implementation will not be on the actual encryption of values and strength of keys. We will however focus on how you would create a basic system that can later be expanded. The reason for this is that DHM requires numbers in the size of over 1024 bits to truely be secure. Implementing our solution for this would shift the focus too much on the cryptography aspect rather than the implementation. In  a real world application one would want to use a cryptographic library to handle the generation of these security elements. We have opted to create our own simple methods instead of adding these libraries.
 
 \subsection{Specifying the protocol}
@@ -29,8 +29,8 @@ The only part missing now is that we want Bob to echo messages sent by Alice. We
 
 Now that we have the two parts of the protocol defined, we can combine them.
 \begin{lstlisting}
- val aliceComplete = aliceDHM next aliceEcho
- val bobComplete   = bobDHM next bobEcho
+ val aliceComplete = aliceDHM next( aliceEcho )
+ val bobComplete   = bobDHM next( bobEcho )
 \end{lstlisting}
 The method ``next'' is a method that allows us to combine two separate ProtocolBuilders. It is useful for when we want to limit the scope of a loop step. In other words the protocol could of been written in a single line by using ``next'' to separate the ``looped()'' step from the DHM steps.
 \\
@@ -91,6 +91,10 @@ def receive = {
 \end{lstlisting}
 Shown above is the consumers ``receive'' method that deals with the various message cases.
 
+\subsection{HTTP Server}
+The perhaps most widely used protocol in use today is the HTTP protocol \cite{fielding1999hypertext}. It is mostly used to serve web-pages to browsers.
+
+One of the main difficulties when implementing the HTTP is that unlike our DHM protocol, there are many optional fields. These optional fields make it much more difficult for us to reason how the protocol will behave.  
 
 
 
