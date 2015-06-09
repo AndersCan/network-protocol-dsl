@@ -11,7 +11,7 @@ package com.protocoldsl.protocol
  */
 case class ValidationError(message: String, exception: Exception = new Exception("Exception Not Set"))
 
-sealed case class Validator(f: String => Either[ValidationError, Any])
+sealed case class Validator(validate: String => Either[ValidationError, Any])
 
 
 abstract class MessageType() {
@@ -159,10 +159,10 @@ class Protocol(var protocolStates: List[MessageType]) {
     val msgType: MessageType = getMessageType(input)
 
     msgType match {
-      case Anyone(v) => msgType.v.f(input)
+      case Anyone(v) => msgType.v.validate(input)
       case Receive(v) =>
         Left(ValidationError("protocol violated - sending when should be receiving"))
-      case _ => msgType.v.f(input)
+      case _ => msgType.v.validate(input)
     }
   }
 
@@ -170,10 +170,10 @@ class Protocol(var protocolStates: List[MessageType]) {
     val msgType: MessageType = getMessageType(input)
 
     msgType match {
-      case Anyone(v) => msgType.v.f(input)
+      case Anyone(v) => msgType.v.validate(input)
       case Send(v) =>
         Left(ValidationError("protocol violated - receiving when should be sending"))
-      case _ => msgType.v.f(input)
+      case _ => msgType.v.validate(input)
     }
   }
 

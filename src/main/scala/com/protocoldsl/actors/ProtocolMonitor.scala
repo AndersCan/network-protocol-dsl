@@ -58,7 +58,7 @@ class ProtocolMonitor(protocol: Protocol, connection: ActorRef, consumer: ActorR
         initiateStop(msg.left.get)
       }
     case DelayedValidation(input, validator) =>
-      val msg = validator.f(input)
+      val msg = validator.validate(input)
       if (msg.isRight) {
         consumer ! msg.right.get
       } else {

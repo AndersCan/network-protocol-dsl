@@ -5,10 +5,10 @@ import java.net.InetSocketAddress
 import akka.actor.{Actor, Props}
 import akka.io.{IO, Tcp}
 import com.protocoldsl.actors.ProtocolMonitor
-import com.protocoldsl.protocol.{ProtocolBuilder, ValidationError, Validator}
+import com.protocoldsl.protocol.{Branch, ProtocolBuilder, ValidationError, Validator}
 import implementation.clientImpl.{PubKey, Username}
 import implementation.crypto.Helper
-import implementation.serverImpl.children.{EncryptedChatMessage, HTTPServer, PrimeAndGenerator}
+import implementation.serverImpl.children.{IsInt, EncryptedChatMessage, HTTPServer, PrimeAndGenerator}
 import implementation.serverImpl.performance.EchoMessage
 import implementation.protocols.ProtocolCollection
 import net.liftweb.json._
@@ -29,12 +29,12 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
   val isAnything = new Validator(in => Right(EchoMessage(in)))
   //  val nothing = new Validator(_ => Left("Nothing will always give a Left()"))
   //
-  //  val isInt = new Validator(x => try {
-  //    Right(IsInt(x.dropRight(2).toInt))
-  //  } catch {
-  //    case e: Exception =>
-  //      Left("msg breaks protocol. not int")
-  //  })
+    val anInt = new Validator(x => try {
+      Right(IsInt(x.dropRight(2).toInt))
+    } catch {
+      case e: Exception =>
+        Left(ValidationError("msg breaks protocol. not int", e))
+    })
   //
   val aUsername = new Validator(x => try {
     Right(Username(x))
@@ -96,18 +96,18 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
   // TODO - How to add multiple communication channels? {S :: C :: C}
   val server = new ProtocolBuilder()
 
-  //  val mulServer =
-  //    server receives isInt receives isInt sends isAnything loop()
+    val mulServer =
+      server receives anInt receives anInt sends anInt loop()
 
   val echoServer = ProtocolBuilder.loop(
     server receives isAnything sends isAnything
   )
-  /*
-    val mulOrEchoTest = new Branch(input =>
+
+    val mulOrEchoTest = Branch(input =>
       if (input forall Character.isDigit) mulServer
       else echoServer
     )
-  */
+
   //val branching = ProtocolBuilder() branchOn mulOrEchoTest
 
   //Diffie Initiation
@@ -118,7 +118,7 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
   //SecureChat
   //  val securechatProtocol = diffieInit receive username send usernames receive username next server anyone isAnything loop()
 
-  val securechatProtocol = diffieInit receives aUsername looped(0, server anyone aChatMessage loop())
+  val securechatProtocol = diffieInit receives aUsername next(server anyone aChatMessage loop())
 
 
   def receive = {
