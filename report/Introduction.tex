@@ -51,7 +51,9 @@ The disadvantage is that it takes a considerable amount of time and effort to cr
 \\\\
 %we will be able to define a protocol and specify its rules in a coherent and self-explanatory fashion. 
 \subsubsection{Embedded DSL}
-An Embedded DSL does not have all these disadvantages nor does it have all the advantages. It is a trade-off between being able to freely create your own grammar and abiding by the rules of the host language. The word ``embedded'' means that we are writing our DSL inside a host language. The DSL we write is then valid syntax for the host language. This removes a lot of the disadvantages with writing a DSL, but severely limits us in our ability to freely express ourselves. This limitation is entirely dependent of the host language, some may be more limiting then others.
+An Embedded DSL\footnote{Also referred to as internal DSL} does not have all these disadvantages nor does it have all the advantages. It is a trade-off between being able to freely create your own grammar or reaping the benefits of an existing grammar.
+
+The word ``embedded'' means that we are writing our DSL inside a host language. The DSL we write is then valid syntax for the host language. This removes a lot of the disadvantages with writing a DSL, but severely limits us in our ability to freely express ourselves. This limitation is entirely dependent of the host language, some may be more limiting then others.
 
 We will create an eDSL to attempt to alleviate the complexity that developers face during implementation of network protocols. Our eDSL will try to enable a work flow guided by encapsulation. It will achieve this property by decomposing the complexity of the overall protocol into smaller elements. Ideally these elements will only have a single task to perform and will abide by the following rule: one input, one output. 
 

@@ -69,25 +69,17 @@ This syntax provides the desired features of being clear, concise and unambiguou
 
 \subsubsection{Diffie-Hellman-Merkle}
 \label{sec:dhm}
-The Diffie-Hellman-Merkle (DHM) key exchange \cite{diffie1976new} is a protocol for establishing a secure and encrypted communication channel among two parties. DHM does not require that the two parties have any values pre-shared or predetermined. DHM is built on one way functions: functions that are easy to perform, but hard to undo. An example often used to convey this type of function is to imagine mixing paint of two different colours together. Mixing the paint is easy, but separating them afterwards if very difficult.
+The Diffie-Hellman-Merkle (DHM) key exchange \cite{diffie1976new} is a protocol for establishing a secure and encrypted communication channel among two parties. DHM does not require that the two parties have any values pre-shared or predetermined. DHM is built on one way functions: functions that are easy to perform, but hard to undo. An example often used to convey this type of function is to imagine mixing paint of two different colours together. Mixing the paint is an easy to perform task. Trying to separate or ``unmix'' the two colours afterwards is nothing short of impossible.
 \\\\
-DHM works much in the same way, but instead of paint we use mathematics, namely discrete logarithm. The discrete logarithm is the number (k) that solves the equation $ a^k = b $. There does not exist any efficient way of determining the value for ``k'', DHM is based on this fact.
+DHM works much in the same way, but instead of paint we use mathematics, namely discrete logarithm. The discrete logarithm is the number (k) that solves the equation $ a^k = b $. There does not exist any efficient way of determining the value for ``k'', DHM is based on this fact. 
 
-DHM works like this: Alice and Bob publicly agree on a prime modulus and a generator, $Prime$ and $Gen$. Alice and Bob then choose a private random number each, ${Ran_{Alice}}$ and ${Ran_{Bob}}$. This private key is known only by the person that generated it and it is vital this key remains a secret.
+We will now explain how two participants, Alice and Bob, establish a secure connection using DHM. First Alice and Bob publicly agree on a prime modulus and a generator, $Prime$ and $Gen$. They then choose a private random number each, ${Ran_{Alice}}$ and ${Ran_{Bob}}$. This private key is known only by the person that generated it and it is vital this key remains a secret.
 
-Alice and Bob then solves the following equation: $Gen^{Ran} \bmod Prime = B$ and exchange their result. Up until this point, all communication has been public, the only the random number $Ran$ is a secret.
+They then solve the following equation: $Gen^{Ran} \bmod Prime = B$ and exchange their result. Up until this point, all communication has been public, the only unknown number for anyone other than Alice and Bob is the $Ran$ number.
 
 When Alice receives Bob's computed $B$ value, she can generate the secret key that they will use for their connection.
 $$
   B^{Ran_{Alice}} \bmod p = SecretKey
 $$
 
-Bob will do the same for Alice's $B$ value and they will both obtain the same number that they can use to encrypt their communication. For anyone that has been listening to Alice's and Bob's communication,  they would have a computationally hard time to obtaining the $SecretKey$. They would first need to find the $Ran$ numbers used by Alice and Bob, and only Alice and Bob know their secret key.
-
-\begin{quote}
-	\textit{``There are only two hard things in Computer Science: cache invalidation and naming things.''}
-	\begin{flushright}
-		Phil Karlton
-	\end{flushright}
-\end{quote}
-
+Bob will do the same for Alice's $B$ value and they will both obtain the same number that they can use to encrypt their communication. For anyone that has been listening to Alice's and Bob's communication,  they would have a computationally hard time in obtaining the $SecretKey$. They would first need to find the $Ran$ numbers used by Alice and Bob, and only Alice and Bob know their secret key.

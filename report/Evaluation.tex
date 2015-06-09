@@ -163,11 +163,11 @@ The first is the performance loss of approximately 20\%. As we compared our syst
 
 The second weakness is specifying protocols that involve more than 2 participants. By using the Event Bus provided by Akka, we are able to enable communication among the consumers, but this communication channel is not necessarily regulated by a Validator. Sending internal messages that are not defined in the protocol specification can cause undesired side-effects. 
 
-\subsubsection{Developer}
+\subsubsection{Correct usage}
 Even though you implement the DSL, there is no guarantee that it will help debugging the implementation. This is because the strengths of this DSL are heavily dependant on the developers and how they decide to implement a network protocol. Although the use of validators provide a clean way of separating concerns in a system, they must be implemented correctly. Poorly written error messages will not provide useful information when debugging. Validators must try to encapsulate as much of the systems complexity as possible. This complexity should be the focus of determining the purpose of a message and wrapping it in a suitable case class. In most cases, the validator should wrap messages inside classes. This will greatly help building the consumers pattern matching function.
 
 
-\subsection{Accomplish Objectives}
+\subsection{Accomplished Objectives}
 All the objectives have been met, with the exception of the tertiary ones. One of the secondary objective was to be able to implement additional protocols, specifically the Needham-Schroeder protocol. The main difference of this protocol compared to the Diffie-Hellman-Merkel protocol is that it involves direct communication with multiple clients. With our DHM key exchange implementations, we have only have direct communication with a single client.
 
 To solve multiple connections we can take use of the Event Bus to communicate with multiple actors. In Needham-Schroeder we need direct communication with a server and a client. Figure \ref{fig:Needham} shows an example of how we could implement the protocol. 
