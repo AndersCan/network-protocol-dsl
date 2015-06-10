@@ -1,20 +1,12 @@
 package implementation.protocols
 
 import com.protocoldsl.protocol.{ProtocolBuilder, ValidationError, Validator}
+import implementation.serverImpl.children._
 
 /**
  * Created by aoc4 on 07/06/15.
  */
 
-case class RequestType(method: String, resource: String, httpVersion: String)
-
-case class HttpHost(host: String)
-
-case class HttpAccept(accept: String)
-
-case class UserAgent(agent: String)
-
-case class HTTPRequest(requestType: RequestType, httpHost: HttpHost, httpAccept: HttpAccept, userAgent: UserAgent)
 
 object ProtocolCollection {
   private val endpoint = ProtocolBuilder()
@@ -47,7 +39,7 @@ object ProtocolCollection {
       Left(ValidationError("Could not get HeaderRequest", e))
   })
 
-  val HTTPServer = endpoint receives HeaderRequest sends anything
+  val HTTPServerProtocol = endpoint receives HeaderRequest sends anything
   /*
   GET / HTTP/1.1
   Host: localhost:8888

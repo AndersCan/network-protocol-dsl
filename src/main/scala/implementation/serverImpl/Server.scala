@@ -130,7 +130,7 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
     case cu@Connected(remote, local) =>
       //println(s"New Connection: remote: $remote, local: $local")
 //      val proto = securechatProtocol.compile
-      val proto = ProtocolCollection.HTTPServer.compile
+      val proto = ProtocolCollection.HTTPServerProtocol.compile
 
       val consumer = context.actorOf(HTTPServer.props())
       // Sender() is sender of the current message
