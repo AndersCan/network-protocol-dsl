@@ -38,11 +38,22 @@ What LOTOS and ESTEREL have in common is that they provide the means of specifyi
 \end{description}
 
 \subsection{Session Types}
-Session Types are a way to model the communication between multiple parties by using types \cite{dardha2012session}. It ties strongly with $\pi$-calculus. $\pi$-calculus helps us model interactions between parties. Session types adds the type of the message to the model. We define both the type and direction of a message. The advantage of using session types is that it allows us to use a type checker to verify whether we are obeying a protocol. The type checker will provide us with feedback at compile time of where we have potentially disobeyed a protocol.
+Session Types are a way to model the communication between multiple parties by using types \cite{dardha2012session}. It ties strongly with $\pi$-calculus. $\pi$-calculus helps us model interactions between parties. Session types adds the type of the message to the model. We define both the type and direction of a message. The advantage of using session types is that it allows us to use a type checker to verify whether we are obeying a protocol. The type checker will provide us with errors at compile time of where we have disobeyed a protocol.
 
 Types also help to communicate a messages intended purpose which increases our reasoning about the control flow. Types provide us with a great deal of implicit information. For example, a we can extrapolate a lot of information when only knowing that the type of a object is a ``String'', an ``Integer'' or a ``Person'' class.
 % Talk about Prolacs low levelness ?
 
+\subsection{Static and dynamic checking}
+In the section above we said that session types have a type checker that will show errors at compile time. This is referred to as static checking. The static checking will check whether your code is breaking the rules set by the ``type system''. Static checking does not need to run a program to find where type errors occur,  unlike dynamic checking which requires the program to be run. Dynamic checking will not detect errors, but will throw an error when erroneous code is attempted executed. This means that we will only be shown an error if, and only if, the program tries to execute the erroneous line of code. This can lead to bugs being implemented during development but not being detected until after release. 
+
+Having a statically typed language is a highly desirable feature for most developers. It detects type errors early and can lead to faster development. Text editors will be better able to offer assistance such as auto-complete and refactoring. This is because it can use the knowledge provided by the type system to better understand the current context.
+
+\subsubsection{Type inference}
+Many languages that do not wish to be verbose when declaring variables, but still want to be statically typed offer type inference.Type inference in short means that the compiler will evaluate the right hand side of an expression to determine the type of the variable.
+\begin{lstlisting}[style=myScalastyle]
+val dog = new Dog()
+\end{lstlisting}
+Here we do not need to explicitly state the type of dog as the right hand side will return a type of ``Dog'' 
 
 % eDSL highly customisable as its written in a host language
 % Model checking time consuming and nobody does it
