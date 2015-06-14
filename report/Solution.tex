@@ -175,6 +175,15 @@ We can also create more complex Validators that make more complex evaluation of 
 \end{lstlisting}
 The method ``isSpecialNumber'' does not need to be defined inside the validator. This is because Scala supports closures. They allow us to reference methods or variables outside the current local scope.
 
+\subsubsection{Testing Validators}
+One of the key features that was desired when designing the Validators was making them ligthweight and easily testable. In the case of our ``aSpecialNumber'' validator defined above we can quickly see all posible outputs from this Validator.
+\begin{itemize}
+  \item Right(SpecialNumber(number))
+  \item Left("Received message is not a SpecialNumber") 
+  \item Left(ValidationError("Received message is not an Integer", e))
+\end{itemize}
+The bare minimum should be writing tests for all three of these return cases. How many tests you create depends on how critical that validator is, but a test for each return type and edge cases should be more than sufficient for most.
+
 \subsubsection{Encrypted  message validation}
 When a message is encrypted, a validator will have no way to determine if it is valid. To do so, it would need to acquire the secret key that can decrypt the message. The secret key will only be available from the consumer. If we want to validate encrypted messages we can use the case class DelayedValidation.
  
