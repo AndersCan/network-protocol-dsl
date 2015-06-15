@@ -172,14 +172,18 @@ Dr. Edwin \textsc{Brady} % Supervisor's Name
 \end{titlepage}
 \clearpage
 
+\pagenumbering{roman}
 % Abstract
 \include{Abstract}
+% Acknowledgement
+\include{Ack}
 % Table of Content
 \clearpage
 \tableofcontents
 % List of Figures
 \clearpage
-\listoffigures
+\include{ListOfFigures}
+
 
 %Nice quote?
 %\begin{quote}
@@ -190,8 +194,10 @@ Dr. Edwin \textsc{Brady} % Supervisor's Name
 %\end{quote}
 % Make changes to Intro after changing the order of sections!
 
+\pagenumbering{arabic}
 % Intro
 \include{Introduction}
+\pagenumbering{arabic}
 % Related Work
 %\include{RelatedWork}
 % Background
@@ -215,7 +221,7 @@ Dr. Edwin \textsc{Brady} % Supervisor's Name
 % Conclusion
 \include{Conclusion}
 %Bibliography
-\include{Appendix}
 \include{Bibliography}
+\include{Appendix}
 
 \end{document}
