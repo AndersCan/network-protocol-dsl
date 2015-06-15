@@ -90,9 +90,30 @@ Any additional clients that connect to the server will also receive greeting mes
 
 
 %Server Username => Unspecified case for: LPO2gbvztUktNyx5+BIsidWgBKslDau969BoddEUcs8=
+\subsubsection{Network packages}
+We will ensure that the values sent over the network truly are what we expect them to be. We do not want to be sending unencrypted values thinking they are encrypted.  For verifying what the values are, we will use the network analyzer Wireshark. Wireshark will capture and save the packets that are sent over the network. We will then be able to read the data that is sent over the network.
 
-\subsection{Measuring Performance}
-To measure the performance of our system, we have decided to implement echo servers that both use and don't use our system.
+In the figures below we show the data that Wireshark has captured. This is the data that has been sent to and from the server. The colours of the text alternates between red and blue. This is to separate the multiple messages and make it clear who the sender of each message. In this case red represents the client while red is the server.
+
+The first figure is between the Server and Client A (\ref{fig:wsclienta}), while the second is the Server and Client B (\ref{fig:wsclientb}).
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.9\linewidth]{evaluation/WSClientA.png}
+  \caption{Client A packets with server}
+  \label{fig:wsclienta}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.9\linewidth]{evaluation/WSClientB.png}
+  \caption{Client B packets with server}
+  \label{fig:wsclientb}
+\end{figure}
+We can see that the first messages sent are the ones to establish a DHM key exchange. After the final public key has been sent, all future communication is encrypted. This confirms that the encryption is working as intended.
+
+\subsection{Measuring the performance of echo servers}
+To measure the performance of our system, we have decided to implement echo servers that both use and don't use our system. The reason we have not run the performance test on a more complicated system is the same reason of we created this DSL. Implementing a complex solution that uses the bare minimum of features would require a lot of time and effort. Unfortunately those are both scarce resources that are better spent elsewhere. In addition, the numbers that we generate from these experiments should hold true for more complex protocol implementations. 
 
 By using our DSL we will check if every single message sent or received obeys a given protocol. This involves checking that the message contents and protocol specification are of an expected value. These extra steps do not come for free and the overall throughput of the system should be lower than that of a system with no such checking. 
 
@@ -120,13 +141,10 @@ The data below shows the average scores for the implementations. As there is som
 	\caption{Average performance of implementations given in milliseconds}
 \end{table}
 % Uses PM is perhaps the most comparable one
-If we look at the data we can see quite clearly that there is a performance penalty when using our system. Analysing the performance table we can see that the throughput of the system is reduced by approximately 4 messages in the full implementation that uses wrapping. Sending 10000 round-trip message that bypasses the PM took an average of 489 milliseconds. Messages that went through the PM and were wrapped took on average 589 milliseconds. This is an increase of approximately 20\%. In many application this increase could potentially be unacceptable.
-
-\subsubsection{Concurrency}
-One of the objectives was building our DSL so it would be concurrent. To test this we will use the HTTP server we created in sections
+If we look at the data we can see quite clearly that there is a performance penalty when using our system. Analyzing the performance table we can see that the throughput of the system is reduced by approximately 4 messages in the full implementation that uses wrapping. Sending 10000 round-trip message that bypasses the PM took an average of 489 milliseconds. Messages that went through the PM and were wrapped took on average 589 milliseconds. This is an increase of approximately 20\%. In many application this increase could potentially be unacceptable.
 
 \subsubsection{Analysing the performance drop}
-The reason why the Basic implementation is faster is that it does not need to read the data it receives. It simply returns whatever it receives, without looking at the contents. The other implementations need to perform several additional steps than just echoing the message:
+The reason why the Basic implementation is faster is that it does not need to read the data it receives. It simply returns whatever it receives, without needing to look at the contents. The other implementations need to perform several additional steps than just echoing the message:
 \begin{enumerate}
   \item Check if receiving is according to the protocol state
   \item Update protocol state
@@ -142,11 +160,46 @@ The reason why the Basic implementation is faster is that it does not need to re
 \end{enumerate}
 As we can see there are quite a few additional steps involved in our system. It seems only natural that the we would suffer from some form of performance loss.
 
-We feel however that a 20\% cost is acceptable for most applications as we are comparing it to a system that has no checking and does not abide by any type of protocol. In addition, this DSL is not focused on performance, but increasing readability, maintainability and helping with the implementation. If we had more time we could tweak our system to offer better performance, but this was never a high priority during design. 
+We feel however that a 20\% cost is acceptable for most applications as we are comparing it to a system that has no checking and does not abide by any type of protocol. In addition, this DSL is not focused on performance, but increasing readability, maintainability and helping with the implementation.
+
+If performance is the only concern of the system, you can still reap benefits from the DSL. In the scenario where you want a server to have high performance, you can verify that it obeys a protocol by using a Protocol Monitor on the client side. The client can then interact with the server and the Protocol Monitor will generate an error if the protocol is not honored.  
 
 
+\subsubsection{Concurrency}
+One of the objectives when building the DSL was so it would be concurrent. To test this we will use the HTTP server we created in section \ref{sec:httpserver} HTTP Server. To do the actual tests we will use the library Gatling\footnote{\href{www.gatling.io}{gatling.io}}. Gatling gives us a DSL to emulate a user navigating a web page. These steps of navigation is referred to as a ``scenario''. The scenario we have created is a user connecting to the homepage, navigating to the`` test1'' page then finally navigating to the ``test2'' page. In between each navigation we will pause 1 second. The amount of users connecting to server will be slightly more complicated than the scenario. We will start with 100 users connecting to the server, then add 50 000 new users over the next 30 seconds. This is approximately equal to 1667 new users connecting to the server per second. When a user has finished the scenario, it will disconnect. 
+
+The reason we are using these numbers is mainly because of the limitations on our operating system. Using a combination of numbers higher than what we have set, would generate an error specifying that we were not allowed to open any addition file: ``java.net.SocketException Too many open files''. This is a limitation of the OS and not our system. The numbers we have specified should however provide proof of the system being concurrent, although they do not show the max potential and breaking point of the system. It should also be noted that these numbers are dependent on the hardware they are run on. For the results below we have used a standard laptop with a Intel Core 7 processor and 8GB of RAM.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.9\linewidth]{evaluation/Latency.png}
+  \caption{Concurrency - Request latency}
+  \label{fig:latency}
+\end{figure}
+In figure \ref{fig:latency} we can see the latency of the requests. The majority of the requests were below 800ms, with only a few above. We can also see that none of the requests failed, this means that none of the requests were dropped and all were fulfilled.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.9\linewidth]{evaluation/RequestsPerSecond.png}
+  \caption{Concurrency - Requests per second}
+  \label{fig:requestspersecond}
+\end{figure}
+In figure \ref{fig:requestspersecond} we can see the number of requests with the number of active users. The request to users is nearly at a 1:1 ratio. We do however see this does not hold true for when the amount of active users is above 5000. This may be due to the limit of requests set by the operating system or it may be the actual max capacity of our system. 
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1\linewidth]{evaluation/Monitor.png}
+  \caption{Concurrency - System Monitor}
+  \label{fig:monitor}
+\end{figure}
+In figure \ref{fig:monitor} we have the System Monitor that shows the usage of the CPU cores. We can clearly see when the stress test begins  and when it ends. All eight cores are being equally and fully utilized, showing that the workload is being correctly distributed. We see that the CPU load takes a similar shape as the amount of concurrent users in the previous figure. This leads us to believe that figure \ref{fig:requestspersecond} is representative of the systems max output as the CPU load is near 100%
+
+The final CPU work we see at the very end is Gatling generating some of the figures displayed above.
+
+\\\\
+The numbers we have presented here should provide a good understanding of our system being able to handle a large amount of simultaneous requests. These numbers are based entirely on the system that they are run and we were unable to crash the system with requests.  
 \subsection{Bug Discovery}
-\subsubsection{Performance tests}
+\subsubsection{Echo server performance tests}
 While running performance test we stumbled upon what we believed to be a bug inside the DSL itself. After the performance testing client had sent around 70 000 messages to the server, it would have a protocol failure. The error was that the server was receiving a message, while the protocols state was in a sending state. We found this strange as the client only sends a message after it has received a message. As our test client was such a simple implementation, we believed the error was perhaps located somewhere within the DSL.
  
 After some debugging of the system, we discovered that the bug was in fact withing the testing client. In our implementation we were accidentally sending an extra message to the server when restarting our counter. After several restarts, the accumulated additional messages would eventually arrive before the server had sent a response.
@@ -193,7 +246,7 @@ Bland concludes his article by stating that the error occurred due to a poor dev
 
 Considering the issues described above, I do not believe that the implementation of the Wrapper Syntax would of prevented this bug. It would certainly have of helped as the Validators are easy to use and test-ability. The fact is that the source file that where the bug resides is full of duplicated code. This is something that should of been re-factored during a code review. 
 
-If we assume that the goto bug was included within a Validator, then the Protocol Monitor would not have detected this error. The Protocol Monitor is completely reliant on the implementation of the Validators being correct. If their validate functions contains errors, then the Protocol Monitor will propogate these errors.
+If we assume that the goto bug was included within a Validator, then the Protocol Monitor would not have detected this error. The Protocol Monitor is completely reliant on the implementation of the Validators being correct. If their validate functions contains errors, then the Protocol Monitor will propagate these errors.
 
 %It could of potentially made the error more detectable as the usage of Validators could make testing easier. Apple did however not create a test for their code, even though it would only take 5 lines of code as shown by Fuller. 
 
@@ -210,9 +263,12 @@ Heartbleed was such a devastating bug as it was a very simple attack, left no tr
 \subsection{Building DSLs with Scala}
 Scala is a powerful language that provides us with much freedom in our creation of a DSL. This freedom is however restrictive in certain areas. Many of these restrictions have been discussed in section \ref{sec:scala} Scala.
  
-The perhaps most interesting question when evaluating Scala as a host language for a DSL is to ask if it ever got in the way of implementing our DSL the way we wanted to. To answer this question we consider what we would change in our DSL if Scala did not have any restrictions. At the moment of writing, we do not believe that any of the restrictions that Scala has have affected our implementation negatively. If anything our DSL has not taken advantage of the features offered by Scala. Specifically we could use more implicit values and features such as currying \cite{odersky2008programming}. 
+The perhaps most interesting question when evaluating Scala as a host language for a DSL is to ask if it ever got in the way of implementing our DSL the way we wanted to. To answer this question we consider what we would change in our DSL if Scala did not have any restrictions. At the moment of writing, we do not believe that any of the restrictions that Scala has have affected our implementation negatively. If anything our DSL has not taken advantage of the features offered by Scala. Specifically we could use more implicit values and features such as partial application \cite{odersky2008programming}. 
 
+\subsubsection{DSL or Library}
+As we stated in the section above, there are many features of Scala that has not been taken full advantage of when creating the DSL syntax. The primary reason for this is that we have wanted to stay agile to allow for change. Knowedledge that we have gained from implementing protocols has broaden our perspective and insight on implementating protocols. As we have gained this new insight, we have had to change the DSL to better accomodate desirable features and ease of use. Had we created our DSL syntax too early, we would not have been as easily able to facilitate for change.
 
+These are the main reasons why our DSL still feels like a library, than a actuall DSL.
 \subsection{Weaknesses}
 We have identified what we believe to be some of the main weaknesses with this DSL.
 
@@ -220,9 +276,7 @@ The first is the performance loss of approximately 20\%. The performance test wa
 
 The second weakness is specifying protocols that involve more than 2 participants. By using the Event Bus provided by Akka, we are able to enable communication among the consumers, but this communication channel is not necessarily regulated by a Validator. Sending internal messages that are not defined in the protocol specification can cause undesired side-effects. 
 
-A third weakness is that the system provides no constructs for dealing with packet loss in the network. In real work applications packets may travel different paths in the network to reach their target. This means that they can be sent in the correct order, but arrive in an alternative order.
-
-Our final weakness is that there is no indication of error when a consumer should send a message, but is idle. For example, if our echo server does not respond to a echo message, no error would occur. It would only be noticed by the client that would never receive a response. 
+Our final weakness is that there is no indication of error when a consumer should send a message, but is idle. For example, if our echo server does not respond to a echo message, no error would occur. This is because the Protocol Monitor does not know how long it should take to produce a message. The error would have to manually be detected by the the client that would be waitning for the message.
 
 %Even though you implement the DSL, there is no guarantee that it will help debugging the implementation. This is because the strengths of this DSL are heavily dependant on the developers and how they decide to implement a network protocol. Although the use of validators provide a clean way of separating concerns in a system, they must be implemented correctly. Poorly written error messages will not provide useful information when debugging. Validators must try to encapsulate as much of the systems complexity as possible. This complexity should be the focus of determining the purpose of a message and wrapping it in a suitable case class. In most cases, the validator should wrap messages inside classes. This will greatly help building the consumers pattern matching function.
 

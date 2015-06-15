@@ -92,6 +92,7 @@ def receive = {
 Shown above is the consumers ``receive'' method that deals with the various message cases. All that is missing from the implementation is calculating the $SecretKey$ and echoing encrypted messages.
 
 \subsection{HTTP Server}
+\label{sec:httpserver}
 The perhaps most widely used protocol in use today is the HTTP protocol \cite{fielding1999hypertext}. It is mostly used to serve web-pages to browsers. We will in this section create a very simple web server that can serve HTML pages.
 
 \subsubsection{Specifying the protocol}
@@ -114,11 +115,15 @@ Our DSL is able to handle that these fields are optional and allowed to be in an
 val httpServer = endpoint receives RequestHeaders sends 
                            ResponseHeaders 
 \end{lstlisting}
-
-\subsubsection{Screenshots}
-Here we can see the result of our implementation 
-TODO Add screenshots...
-
+Due to time constraints, our server does not run any validation on the ResponseHeaders.
+\subsubsection{HTTP server running}
+Here we can see the index page of our server. We also provide additional pages such as ``test1'' and ``test2''
+\begin{figure}[h]
+	\centering
+	\includegraphics[scale=0.7]{images/protocolimplementations/httpserver.png} 
+	\caption{HTTP Server index page}
+	\label{fig:httpserver}
+\end{figure}
 
 
 

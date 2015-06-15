@@ -1,7 +1,7 @@
 %\section{Tools}
 \subsection{Scala}
 \label{sec:scala}
-Scala is a programming language that combines the power of Object-oriented and functional programming. It was created by Martin Odersky in 2004 CITE. In his paper, An Overview of the Scala programming language, Odersky gives a good introduction to what Scala is 
+Scala is a programming language that combines the power of Object-oriented and functional programming. It was created by Martin Odersky in 2004 \cite{odersky2004overview}. In his paper, An Overview of the Scala programming language, Odersky gives a good introduction to what Scala is 
 \begin{quote}
 	\textit{``Scala fuses object-oriented language and functional programming in a statically typed programming language. It is aimed at the construction of components of components and components system''}
 	\begin{flushright}
@@ -25,9 +25,22 @@ Scala however offers us the ability to write an embedded domain specific languag
 
 Often when writing a DSL, we want to use a language that both feels and looks natural. Semi-colons, parenthesis and the dot-notation can make a language seem less natural. It also limits readability as it often does not provide any additional information. We find that ``a + b'' is much more readable than ``a.+(b)''. When creating our DSL we will therefor want to omit these characters when possible. It is however important to include parentheses when one wants to be explicit about precedence. ``a + b * c'' could be re-written as ``a + (b * c)'' to clearly show precedence.
 
-A powerful feature of Scala the ``implicit'' construct. It allows us to implicitly pass values to functions. We can reduce redundancy and remove unneeded redundancy. When a function declares one of its input parameters as implicit, it will search the local scope for a value that has been declared with the keyword ``implicit''. During compilation of the system, the compiler will add the implicit values to the function call parameters.
+\subsubsection{Implicits}
+A powerful feature of Scala the ``implicit'' construct. It allows us to implicitly pass values to functions. When a function declares one of its input parameters as implicit, it means that it should retrive the value from the local scope of the caller. During compilation of the system, the compiler will add the implicit values to the function call parameters.
 
-\subsection{Case Classes}
+\begin{lstlisting}[style=myScalastyle]
+def add(a: Int)(implicit b: Int) : Int = {
+    a + b
+}
+
+val x = 2
+implicit val y = 3
+
+add(a) // = x + y => 2 + 3 => 5
+\end{lstlisting}
+The function ``add'' takes two parameters: one is explicitly provided while the other is implicitly provided. In our example value ``x'' matches ``a'' and the implicit value ``y'' matches  ``b''. If we declare an additional implicit value ``z'' of type Int in the scope, we will generate an error. This is because it is now ambiguous which value should be used to replace ``b''. 
+
+\subsubsection{Case Classes}
 Scala is capable of creating a ``plain-old-Java-object''(POJO) in just one line of code. It removes a lot of the boiler plate normally needed when creating a class. Methods such as constructors, getters/setters, toString etc. are created for us.
 
 Case classes are meant to be used as data storing objects, a wrapper class. Unlike normal classes, a case class does not have any user-defined functions that can be added to it. It is mainly used for pattern matching operations.
