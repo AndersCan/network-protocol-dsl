@@ -34,7 +34,7 @@ Using the steps shown above we can create the protocol description for the serve
  val dhm   = endpoint receives primeAndGenerator 
                   sends aPublicKey receives aPublicKey
  val chatServer = dhm receives aUsername 
-                       next endpoint anyone aChatMessage loop()
+                       next endpoint anyone aChatMessage looped()
 \end{lstlisting}
 Here we have re-used our implementation of DHM we defined earlier and added the messages needed for a chat server.
 
@@ -64,7 +64,7 @@ The server alerts connected users when a new users connects. When the connected 
 \begin{figure}[H]
   \centering
   \includegraphics[width=1\linewidth]{evaluation/Server.png}
-  \caption{Server}
+  \caption{Secure chat server with connected users}
   \label{fig:server}
 \end{figure}
 
@@ -93,7 +93,7 @@ Any additional clients that connect to the server will also receive greeting mes
 \subsubsection{Network packages}
 We will ensure that the values sent over the network truly are what we expect them to be. We do not want to be sending unencrypted values thinking they are encrypted.  For verifying what the values are, we will use the network analyzer Wireshark. Wireshark will capture and save the packets that are sent over the network. We will then be able to read the data that is sent over the network.
 
-In the figures below we show the data that Wireshark has captured. This is the data that has been sent to and from the server. The colours of the text alternates between red and blue. This is to separate the multiple messages and make it clear who the sender of each message. In this case red represents the client while red is the server.
+In the figures below we show the data that Wireshark has captured. This is the data that has been sent to and from the server. The colours of the text alternates between red and blue. This is to separate the multiple messages and make it clear who the sender of each message. In this case red represents the client while blue is the server.
 
 The first figure is between the Server and Client A (\ref{fig:wsclienta}), while the second is the Server and Client B (\ref{fig:wsclientb}).
 
@@ -113,7 +113,7 @@ The first figure is between the Server and Client A (\ref{fig:wsclienta}), while
 We can see that the first messages sent are the ones to establish a DHM key exchange. After the final public key has been sent, all future communication is encrypted. This confirms that the encryption is working as intended.
 
 \subsection{Measuring the performance of echo servers}
-To measure the performance of our system, we have decided to implement echo servers that both use and don't use our system. The reason we have not run the performance test on a more complicated system is the same reason of we created this DSL. Implementing a complex solution that uses the bare minimum of features would require a lot of time and effort. Unfortunately those are both scarce resources that are better spent elsewhere. In addition, the numbers that we generate from these experiments should hold true for more complex protocol implementations. 
+To measure the performance of our system, we have decided to implement echo servers that both use and don't use our system. The reason we have not run the performance test on a more complicated system is the same reason why we created this DSL. Implementing a complex solution that uses the bare minimum of features would require a lot of time and effort. Unfortunately those are both scarce resources that are better spent elsewhere. In addition, the numbers that we generate from these experiments should hold true for more complex protocol implementations. 
 
 By using our DSL we will check if every single message sent or received obeys a given protocol. This involves checking that the message contents and protocol specification are of an expected value. These extra steps do not come for free and the overall throughput of the system should be lower than that of a system with no such checking. 
 
@@ -162,7 +162,7 @@ As we can see there are quite a few additional steps involved in our system. It 
 
 We feel however that a 20\% cost is acceptable for most applications as we are comparing it to a system that has no checking and does not abide by any type of protocol. In addition, this DSL is not focused on performance, but increasing readability, maintainability and helping with the implementation.
 
-If performance is the only concern of the system, you can still reap benefits from the DSL. In the scenario where you want a server to have high performance, you can verify that it obeys a protocol by using a Protocol Monitor on the client side. The client can then interact with the server and the Protocol Monitor will generate an error if the protocol is not honored.  
+If performance is the primary concern of a system, you can still reap benefits from the usage of the DSL. In a scenario where you want a server to have high performance as well as protocol compliance, you can verify that it obeys a protocol by using a Protocol Monitor on the opposite end. In this case you can create a client that can interact with the server and the clients Protocol Monitor will generate an error if the protocol is not honored by the server.  
 
 
 \subsubsection{Concurrency}
@@ -192,12 +192,12 @@ In figure \ref{fig:requestspersecond} we can see the number of requests with the
   \caption{Concurrency - System Monitor}
   \label{fig:monitor}
 \end{figure}
-In figure \ref{fig:monitor} we have the System Monitor that shows the usage of the CPU cores. We can clearly see when the stress test begins  and when it ends. All eight cores are being equally and fully utilized, showing that the workload is being correctly distributed. We see that the CPU load takes a similar shape as the amount of concurrent users in the previous figure. This leads us to believe that figure \ref{fig:requestspersecond} is representative of the systems max output as the CPU load is near 100%
+In figure \ref{fig:monitor} we have the System Monitor that shows the usage of the CPU cores. We can clearly see when the stress test begins  and when it ends. All eight cores are being equally and fully utilized, showing that the workload is being correctly distributed. We see that the CPU load takes a similar shape as the amount of concurrent users in the previous figure. This leads us to believe that figure \ref{fig:requestspersecond} is representative of the systems max output as the CPU load is near 100\%.
 
 The final CPU work we see at the very end is Gatling generating some of the figures displayed above.
 
 \\\\
-The numbers we have presented here should provide a good understanding of our system being able to handle a large amount of simultaneous requests. These numbers are based entirely on the system that they are run and we were unable to crash the system with requests.  
+The numbers we have presented here should provide proof of our system being able to handle a large amount of simultaneous requests without any real issue.
 \subsection{Bug Discovery}
 \subsubsection{Echo server performance tests}
 While running performance test we stumbled upon what we believed to be a bug inside the DSL itself. After the performance testing client had sent around 70 000 messages to the server, it would have a protocol failure. The error was that the server was receiving a message, while the protocols state was in a sending state. We found this strange as the client only sends a message after it has received a message. As our test client was such a simple implementation, we believed the error was perhaps located somewhere within the DSL.
@@ -219,7 +219,7 @@ if ((err = SecurityCheck2()) != 0) // dead code
 
 This duplicated line causes the ``SecurityCheck2()'' to never be run. The indentation makes it appear to belong to the first ``if'' statement, but the if statement has no curly braces. If statements without curly braces will only include the first line in the if statement.  In this particular case, skipping the final security check would allow for a man-in-the-middle attack.
 
-The actual cause of why this duplicated line was created was most likely due to a merge gone wrong\footnote{Difference of source after merge: \href{https://gist.github.com/hongrich/9176925}{GitHub.com}}. After developers have made changes to the same source file, they will eventually need to combine them. This is often done by merging the two files together. It was highly likely that the duplication occurred in this process.
+The actual cause of why this duplicated line was created was most likely due to a merge gone wrong\footnote{Difference of source after merge: \href{https://gist.github.com/hongrich/9176925}{gist.github.com/hongrich/9176925}}. After developers have made changes to the same source file, they will eventually need to combine them. This is often done by merging the two files together. It is highly likely that the duplication occurred in this process.
 \begin{figure}[H]
   \centering
   \includegraphics[width=1\linewidth]{evaluation/gotodate.png}
@@ -240,17 +240,17 @@ There are many questions to how this bug could go unnoticed for so long. In figu
 
 The one that perhaps stands out the most is the fact that the compiler should give a warning when ``dead-code'' is discovered. Dead-code is a term used when a code segment will under no circumstances ever be executed. The SecurityCheck2() should of produced such a warning. Granted you must activate the compiler to show these warnings, but all such errors should always be shown.
 
-The second factor that should of caught this error would be a single unit-test. Landon Fuller has demonstrated that all it would take is 5 lines of code to detect the error\footnote{Landon Fuller's test: \href{https://github.com/landonf/Testability-CVE-2014-1266}{GitHub.com}}.
+The second factor that should of caught this error would be a single unit-test. Landon Fuller has demonstrated that all it would take is 5 lines of code to detect the error\footnote{Landon Fuller's test: \href{https://github.com/landonf/Testability-CVE-2014-1266}{GitHub.com/landonf/Testability-CVE-2014-1266}}.
 
 Bland concludes his article by stating that the error occurred due to a poor development culture within Apple. There are many best practices that they have failed to implement and this resulted in the bug.
 
-Considering the issues described above, I do not believe that the implementation of the Wrapper Syntax would of prevented this bug. It would certainly have of helped as the Validators are easy to use and test-ability. The fact is that the source file that where the bug resides is full of duplicated code. This is something that should of been re-factored during a code review. 
+Considering the issues described above, I do not believe that the implementation of our DSL would of prevented this bug. It would certainly have of helped as the Validators are easy to use and test. The fact is that the source file that where the bug resides is full of duplicated code. This is something that should of been re-factored during a code review. 
 
 If we assume that the goto bug was included within a Validator, then the Protocol Monitor would not have detected this error. The Protocol Monitor is completely reliant on the implementation of the Validators being correct. If their validate functions contains errors, then the Protocol Monitor will propagate these errors.
 
 %It could of potentially made the error more detectable as the usage of Validators could make testing easier. Apple did however not create a test for their code, even though it would only take 5 lines of code as shown by Fuller. 
 
-Having stated that my system would not have detected Apple's goto bug, I do believe it could of detected similar errors within a different development team. Writing unit tests in general is something that should be done for production ready code. Apple however did not write tests with adequate code coverage and it resulted in this bug. This lead me to agree with Bland conclusion: The root of this bug lies not within the tools used, but rather in the culture of the development team.
+Having stated that my system would not have detected Apple's goto bug, I do believe it could of detected similar errors within a different development team. Writing unit tests in general is something that should be done for production ready code. Apple however did not write tests with adequate code coverage and it resulted in this bug. This leads me to agree with Bland's conclusion: The root of this bug lies not within the tools used, but rather in the culture of the development team.
 
 \iffalse
 \subsubsection{Heartbleed}
@@ -266,9 +266,9 @@ Scala is a powerful language that provides us with much freedom in our creation 
 The perhaps most interesting question when evaluating Scala as a host language for a DSL is to ask if it ever got in the way of implementing our DSL the way we wanted to. To answer this question we consider what we would change in our DSL if Scala did not have any restrictions. At the moment of writing, we do not believe that any of the restrictions that Scala has have affected our implementation negatively. If anything our DSL has not taken advantage of the features offered by Scala. Specifically we could use more implicit values and features such as partial application \cite{odersky2008programming}. 
 
 \subsubsection{DSL or Library}
-As we stated in the section above, there are many features of Scala that has not been taken full advantage of when creating the DSL syntax. The primary reason for this is that we have wanted to stay agile to allow for change. Knowedledge that we have gained from implementing protocols has broaden our perspective and insight on implementating protocols. As we have gained this new insight, we have had to change the DSL to better accomodate desirable features and ease of use. Had we created our DSL syntax too early, we would not have been as easily able to facilitate for change.
+As we stated in the section above, there are many features of Scala that has not been taken full advantage of when creating the DSL syntax. The primary reason for this is that we have wanted to stay agile to allow for change. Knowedledge that we have gained from implementing protocols has broaden our perspective and insight on implementing protocols. As we have gained this new insight, we have had to change the DSL to increase desirable features and ease of use. Had we created our DSL syntax too early, we would not have been as easily able to facilitate for change.
 
-These are the main reasons why our DSL still feels like a library, than a actuall DSL.
+These are the main reasons why our DSL still feels more like a library, than an actual DSL.
 \subsection{Weaknesses}
 We have identified what we believe to be some of the main weaknesses with this DSL.
 

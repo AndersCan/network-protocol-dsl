@@ -18,10 +18,10 @@ Scala is a functional language because it supports the constructs needed for fun
 \\\\
 The combination of these paradigms allows us to cherry pick the parts that we need for our solution and use the best of two worlds.
 \\\\
-Scala is run on the JVM and allows freely for the combination of both Scala and Java libraries. As a result of this Scala gains the benefits of having the mature Java ecosystem at its disposal. This is perhaps one of the reasons why Scala has seen a positive increase in its adoption rate. It enables the usage of the existing Java code without the need for re-implementing the entire system in Scala.
+Scala is run on the JVM and allows freely for the combination of both Scala and Java libraries. As a result of this, Scala gains the benefits of having the mature Java ecosystem at its disposal. This is perhaps one of the reasons why Scala has seen a positive increase in its adoption rate. It enables the usage of the existing Java code without the need for re-implementing the entire system in Scala.
 
-\subsubsection{Creating a DSL with Scala}
-Scala however offers us the ability to write an embedded domain specific language. The main difference between a DSL and a embedded DSL is that the domain specific language is valid Scala code. This allows us to avoid the effort of needing to creating our own grammar and parser. 
+\subsubsection{Creating a embedded DSL with Scala}
+Scala offers us the ability to write an embedded domain specific language. The main difference between a DSL and a embedded DSL is that the domain specific language is valid Scala code. This allows us to avoid the effort of needing to creating our own grammar and parser. 
 
 Often when writing a DSL, we want to use a language that both feels and looks natural. Semi-colons, parenthesis and the dot-notation can make a language seem less natural. It also limits readability as it often does not provide any additional information. We find that ``a + b'' is much more readable than ``a.+(b)''. When creating our DSL we will therefor want to omit these characters when possible. It is however important to include parentheses when one wants to be explicit about precedence. ``a + b * c'' could be re-written as ``a + (b * c)'' to clearly show precedence.
 
@@ -32,11 +32,10 @@ A powerful feature of Scala the ``implicit'' construct. It allows us to implicit
 def add(a: Int)(implicit b: Int) : Int = {
     a + b
 }
-
 val x = 2
 implicit val y = 3
 
-add(a) // = x + y => 2 + 3 => 5
+add(a) // => x + y => 2 + 3 => 5
 \end{lstlisting}
 The function ``add'' takes two parameters: one is explicitly provided while the other is implicitly provided. In our example value ``x'' matches ``a'' and the implicit value ``y'' matches  ``b''. If we declare an additional implicit value ``z'' of type Int in the scope, we will generate an error. This is because it is now ambiguous which value should be used to replace ``b''. 
 
@@ -45,18 +44,33 @@ Scala is capable of creating a ``plain-old-Java-object''(POJO) in just one line 
 
 Case classes are meant to be used as data storing objects, a wrapper class. Unlike normal classes, a case class does not have any user-defined functions that can be added to it. It is mainly used for pattern matching operations.
 
+\subsubsection{Pattern matching}
+Pattern matching \cite{emir2007matching} can be thought of as a syntactic sugar for multiple ``if-else'' statements. In a pattern matching function, you try to match a given input to a specified pattern. This pattern can be used to match the inputs type or value.
+
+\begin{lstlisting}[style=myScalastyle]
+def receive = {
+    case Person(name, age) => // do something with a person
+    case Animal(name, age) => // do something with an animal
+    case _ => // _ is a wild card in Scala and will match anything
+}
+\end{lstlisting}
+The method above will, in order, try to match the given input to the specified cases. The input will only match with the first pattern it satisfies, it will not continue to find additional matches after a match has been found.
+ 
+
 \subsection{Akka} 
 %REF: Need to cite more directly to akka.io or rewrite
-Akka\footnote{akka.io}\cite{akka-documentation} is a toolkit designed specifically for implementing the Actor model. The Actor model approach to solving concurrency has been used by the Erlang language. Erlang has been used by the telecom industry to produce distributed and fault tolerant systems. 
+Akka\footnote{\href{akka.io}{akka.io}}\cite{akka-documentation} is a toolkit designed specifically for implementing the Actor model. An actor is a single, independent unit that performs actions bases on messages that it receives. The Actor model approach to solving concurrency has been used by the Erlang language \cite{vinoski2007concurrency}. 
 
+Erlang has been used by the tele-com industry to produce distributed and fault tolerant systems by using the Actor Model. Erlang was created to solve concurrency issues involved when using multiple CPU cores. One of the main issue with multithreaded programming is dealing with shared state. Erlang deals with this by using a ``share nothing'' concept. Actors can only communicate by means of sending and receiving messages, not directly sharing a value. Akka is built upon this concept and does not have any shared state across actors.
+
+\subsubsection{Actor Model}
 \begin{figure}[h]
 	\centering
 	\includegraphics[scale=0.4]{images/tools/ActorModel.png} 
 	\caption{Actor Model}
 	\label{fig:ActorModel}
 \end{figure}
-\subsubsection{Actor Model}
-The key points of the Actor model is building a hierarchy of  actors that receive messages in their mailbox. Figure \ref{fig:ActorModel} shows the general idea of the actors. The actors have a supervisor that will deliver tasks/messages to their inbox. The actors will then process the messages from their inbox and perform the appropriate task for each message. 
+The key points of the Actor model is building a hierarchy of  actors that receive messages in their mailbox. Figure \ref{fig:ActorModel} shows the general idea of the actors. The actors have a supervisor that will deliver tasks/messages to their inbox. The actors will then process the messages from their inbox and perform the appropriate task for each message. A actor can have an arbitrary amount of children, but only have one parent.
 \subsubsection{Akka Actors}
 The Actors in Akka are defined by Akka as lightweight, concurrent entities that use an event driven receive loop to process messages in its mailbox. An actors main functions can be boiled down to either receiving or sending messages. Akka's official documentation state that the size of a single actor is 300KB. With 1GB of heap memory, we can create approximately 2.5 million actors. 
 

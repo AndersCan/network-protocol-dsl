@@ -44,7 +44,7 @@ Types also help to communicate a messages intended purpose which increases our r
 % Talk about Prolacs low levelness ?
 
 \subsection{Static and dynamic checking}
-In the section above we said that session types have a type checker that will show errors at compile time. This is referred to as static checking. The static checking will check whether your code is breaking the rules set by the ``type system''. Static checking does not need to run a program to find where type errors occur,  unlike dynamic checking which requires the program to be run. Dynamic checking will not detect errors, but will throw an error when erroneous code is attempted executed. This means that we will only be shown an error if, and only if, the program tries to execute the erroneous line of code. This can lead to bugs being implemented during development but not being detected until after release. 
+In the section above we said that session types have a type checker that will show errors at compile time. This is referred to as static checking. The static checking will check whether your code is breaking the rules set by the ``type system''. Static checking does not need to run a program to find where type errors occur,  unlike dynamic checking which requires the program to be run. Dynamic checking will not detect errors, but will throw an error when erroneous code is attempted executed. This means that we will only be shown an error if, and only if, the program tries to execute the erroneous line of code. This can lead to bugs being implemented during development, but not being detected until after release. 
 
 Having a statically typed language is a highly desirable feature for most developers. It detects type errors early and can lead to faster development. Text editors will be better able to offer assistance such as auto-complete and refactoring. This is because it can use the knowledge provided by the type system to better understand the current context.
 
@@ -53,7 +53,7 @@ Many languages that do not wish to be verbose when declaring variables, but stil
 \begin{lstlisting}[style=myScalastyle]
 val dog = new Dog()
 \end{lstlisting}
-Here we do not need to explicitly state the type of dog as the right hand side will return a type of ``Dog'' 
+Here we do not need to explicitly state the type of dog as the right hand side will return a type of ``Dog'', meaning the left handside must also be of type ``Dog''
 
 % eDSL highly customisable as its written in a host language
 % Model checking time consuming and nobody does it
@@ -62,7 +62,7 @@ Here we do not need to explicitly state the type of dog as the right hand side w
 \subsection{Security Protocols}
 A network protocol is expected to have a predetermined (deterministic) outcome for any given input. Without this determinism, implementation of such a protocol would prove to be difficult, if not impossible. Rules are often expressed as a protocol specification. How one creates this specification is entirely up to the author of the protocol. Often it is expressed as a combination of mathematical equations with diagrams and descriptions.  All that is desired is that the specification is clear, concise and unambiguous.
 \subsubsection{Kerberos}
-One popular and widely used network protocol is the Kerberos protocol \cite{steiner1988kerberos}. Kerberos describes the protocol in which a user can authenticate itself with a single server to gain access to multiple services a process known as single sign-on. Kerberos sends many messages over the network that are encrypted with various encryption keys. To better document the information being sent and encryption keys used on this information, they would use the following syntax:
+One popular and widely used network protocol is the Kerberos protocol \cite{steiner1988kerberos}. Kerberos describes the protocol in which a user can authenticate itself with a single server to gain access to multiple services, a process known as single sign-on. Kerberos sends many messages over the network that are encrypted with various encryption keys. To better document the information being sent and encryption keys used on this information, they would use the following syntax:
 $$
 \begin{multlined}
  \{Username, Address, Timestamp\}Key_{UserPassword}

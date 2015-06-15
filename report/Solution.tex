@@ -28,7 +28,7 @@ In order for the architecture to function as we have described, the PM requires 
 The task of the PM is to forward and validate messages it receives. For it to validate these messages, it must also contain a state. Defining the state will be the task of the DSL. Defining such a protocol capable of containing a fluctuating state needs to be as effortless as possible. The syntax should also be concise so that reasoning about how the protocol operates is obvious.
 
 \subsubsection{Consumer}
-With our definition of what responsibilities the PM has, we can safely assume that all messages received by the consumer are expected. This means that it will not receive any messages that the protocol has not already dictated it should receive. This will remove much of the need for error handling code in the implementation. The only error that will need to be dealt with is when the protocol breaks.  
+With our definition of what responsibilities the PM has, we can safely assume that all messages received by the consumer are expected. This means that it will not receive any messages that the protocol has not already dictated it should receive. This will remove a lot of error handling code in the implementation as the PM will take care of those. The only error that will need to be dealt with is when the protocol breaks.  
 
 
 \subsubsection{Component mapping}
@@ -94,15 +94,15 @@ Once they are created, we can begin to define our protocol.
  server gotoStep 0
  client gotoStep 0 
 \end{lstlisting}
-The first and most obvious change is that we have dropped the arrow syntax in favour of ``send'' and ``receive''. Although Scala can support such operators, it would not improve readability and would be difficult to type.
+The first and most obvious change is that we have dropped the arrow syntax in favour of ``sends'' and ``receives''. Although Scala can support such operators, it would not improve readability and would be difficult to type.
 
 The second major change is that we are not using the type ``String'', but ``aString''. We will discuss this later is section {\ref{sec:validator} Validator}, but for now we will assume that ``aString'' is a validation on that the message is a string.   
 \\\\
 The main concern with this code is that we must define both the client and server side for each send and receive call. In a real implementation, we would only need to focus on one single end-point. By knowing one end of the protocol, we can construct the opposite protocol. In addition, Scala would allow us to omit the parentheses to increase readability, but not when we have two input parameters.
 \\\\
-Taking the above concerns into consideration, we propose a syntax that avoids this mutability and is less redundant. We have named this syntax the ``Wrapper Syntax'' as is it built around wrapping messages inside case classes. 
+Taking the above concerns into consideration, we propose a syntax that avoids this mutability and is less redundant. 
 
-\subsubsection{Wrapper syntax}
+\subsubsection{Our protocol specification syntax}
 The following shows the syntax in our DSL for defining a echo client and server.
 
 \begin{lstlisting}[style=myScalastyle]
@@ -110,13 +110,13 @@ The following shows the syntax in our DSL for defining a echo client and server.
  val client  = endpoint sends aString receives aString
  val server  = endpoint receives aString sends aString
 \end{lstlisting}
-We have removed mutability by making all calls to send or receive return a new instance of a ProtocolBuilder(), this allows us to chain multiple send and receive in one line. This is very similar to the Builder pattern, hence the name.
+We have removed mutability by making all calls to ``sends'' or ``receives'' return a new instance of a ProtocolBuilder(), this allows us to chain multiple send and receive in one line. This is very similar to the Builder pattern, hence the name.
 
 As the value ``endpoint'' is never mutated, we can reuse the endpoint and be assured that it is always a blank starting point for us to use. 
 
 To add a loop to the protocol, we add a call to ``looped()'' at the end.
 \begin{lstlisting}[style=myScalastyle]
- val client = endpoint send aString receive aString loop()
+ val client = endpoint send aString receive aString looped()
 \end{lstlisting}
 When the protocol state reaches looped(), it will return the state to the first defined step, in this case ``send aString'' 
 
@@ -191,7 +191,7 @@ When a message is encrypted, a validator will have no way to determine if it is 
 case class DelayedValidation(input: String, validator: Validator)
 \end{lstlisting}
 
-DelayedValidator has two attributes, a string and a validator. The string is the encrypted message and the validator is to receive the decrypted input. Once the consumer receives a DelayedValidator message it will decrypt the input and pass it back to the Protocol Monitor. The Protocol Monitor will then verify whether the message is valid. This provides us with consistency as it is always the PM that handles validation of messages.
+DelayedValidator has two attributes, a string and a validator. The string is the encrypted message and the Validator is going to validate the decrypted input. Once the consumer receives a DelayedValidator message it will decrypt the input and pass it back to the Protocol Monitor. The Protocol Monitor will then verify whether the message is valid. This provides us with consistency as it is always the PM that handles validation of messages.
    
 %Ultimately we will need decide whether we should be able to define conditional steps. For example in the Diffie-Hellman-Merkle protocol, the secure public key must be agreed by both parties. If one client  
 %
