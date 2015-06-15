@@ -34,7 +34,7 @@ Using the steps shown above we can create the protocol description for the serve
  val dhm   = endpoint receives primeAndGenerator 
                   sends aPublicKey receives aPublicKey
  val chatServer = dhm receives aUsername 
-                       next endpoint anyone aChatMessage looped()
+                       next endpoint anyone aChatMessage loop()
 \end{lstlisting}
 Here we have re-used our implementation of DHM we defined earlier and added the messages needed for a chat server.
 

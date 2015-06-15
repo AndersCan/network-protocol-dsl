@@ -21,9 +21,9 @@ The only part missing now is that we want Bob to echo messages sent by Alice. We
 
 \begin{lstlisting}[style=myScalastyle]
  val aliceEcho = endpoint sends anEchoMessage 
-                  receives anEchoMessage looped()
+                  receives anEchoMessage loop()
  val bobEcho   = endpoint receives anEchoMessage
-                  receives anEchoMessage looped()
+                  receives anEchoMessage loop()
 \end{lstlisting}
 
 Now that we have the two parts of the protocol defined, we can combine them.
@@ -31,7 +31,7 @@ Now that we have the two parts of the protocol defined, we can combine them.
  val aliceComplete = aliceDHM next( aliceEcho )
  val bobComplete   = bobDHM next( bobEcho )
 \end{lstlisting}
-The method ``next'' allows us to combine two separate ProtocolBuilders. It is useful for when we want to limit the scope of a loop step. In other words the protocol could of been written in a single line by using ``next'' to separate the ``looped()'' step from the DHM steps.
+The method ``next'' allows us to combine two separate ProtocolBuilders. It is useful for when we want to limit the scope of a loop step. In other words the protocol could of been written in a single line by using ``next'' to separate the ``loop()'' step from the DHM steps.
 \\
 Now we need to create the validators that will be used to verify the messages sent and received.
 

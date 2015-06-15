@@ -8,7 +8,7 @@ import com.protocoldsl.actors.ProtocolMonitor
 import com.protocoldsl.protocol.{Branch, ProtocolBuilder, ValidationError, Validator}
 import implementation.clientImpl.{PubKey, Username}
 import implementation.crypto.Helper
-import implementation.serverImpl.children.{IsInt, EncryptedChatMessage, HTTPServer, PrimeAndGenerator}
+import implementation.serverImpl.children.{IsInt, EncryptedChatMessage, HTTPServer, PrimeAndGenerator, SecureChatServer}
 import implementation.serverImpl.performance.EchoMessage
 import implementation.protocols.ProtocolCollection
 import net.liftweb.json._
@@ -129,10 +129,11 @@ class Server(inetSocketAddress: InetSocketAddress) extends Actor {
 
     case cu@Connected(remote, local) =>
       //println(s"New Connection: remote: $remote, local: $local")
-//      val proto = securechatProtocol.compile
-      val proto = ProtocolCollection.HTTPServerProtocol.compile
+      val proto = securechatProtocol.compile
+      //val proto = ProtocolCollection.HTTPServerProtocol.compile
 
-      val consumer = context.actorOf(HTTPServer.props())
+      //val consumer = context.actorOf(HTTPServer.props())
+      val consumer = context.actorOf(SecureChatServer.props())
       // Sender() is sender of the current message
       val connection = sender()
       val handler = context.actorOf(ProtocolMonitor.props(proto, connection, consumer))

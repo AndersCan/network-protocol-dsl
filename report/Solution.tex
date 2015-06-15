@@ -114,11 +114,11 @@ We have removed mutability by making all calls to ``sends'' or ``receives'' retu
 
 As the value ``endpoint'' is never mutated, we can reuse the endpoint and be assured that it is always a blank starting point for us to use. 
 
-To add a loop to the protocol, we add a call to ``looped()'' at the end.
+To add a loop to the protocol, we add a call to ``loop()'' at the end.
 \begin{lstlisting}[style=myScalastyle]
- val client = endpoint sends aString receives aString looped()
+ val client = endpoint sends aString receives aString loop()
 \end{lstlisting}
-When the protocol state reaches looped(), it will return the state to the first defined step, in this case ``sends aString'' 
+When the protocol state reaches loop(), it will return the state to the first defined step, in this case ``sends aString'' 
 
 Another feature that we have added is that sometimes the order of messages is irrelevant. For example in a chat application, we want the participants to be able to send and receive in any possible order. For allowing this we have implemented the method ``anyone'' that represents being the sender or receiver of the current message is unimportant.
 
