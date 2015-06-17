@@ -32,17 +32,17 @@ class ClientServer(remoteHost: InetSocketAddress) extends Actor {
 
   val isAnything = new Validator(in => Right(in))
 
-  val isPrime = new Validator(input => try {
-    val maybePrime: BigInt = BigInt(input.toString.dropRight(2))
-    println(maybePrime)
-    val result = Helper.fermat(maybePrime)
-    if (result) Right(input.toDouble)
-    else Left(ValidationError("Not prime"))
-  } catch {
-    case e: Exception =>
-      println(e.getMessage)
-      Left(ValidationError("msg breaks protocol. not PRIME"))
-  })
+//  val isPrime = new Validator(input => try {
+//    val maybePrime: BigInt = BigInt(input.toString.dropRight(2))
+//    println(maybePrime)
+//    val result = Helper.fermat(maybePrime)
+//    if (result) Right(input.toDouble)
+//    else Left(ValidationError("Not prime"))
+//  } catch {
+//    case e: Exception =>
+//      println(e.getMessage)
+//      Left(ValidationError("msg breaks protocol. not PRIME"))
+//  })
 
   val isDouble = new Validator(x => try {
     Right(x.dropRight(2).toDouble)

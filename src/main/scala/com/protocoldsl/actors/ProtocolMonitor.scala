@@ -68,9 +68,12 @@ class ProtocolMonitor(protocol: Protocol, connection: ActorRef, consumer: ActorR
     case Initiation =>
       consumer ! Initiation
     case PeerClosed =>
+      clientQuit = true
       initiateStop(PeerClosed)
     case ChildFinished =>
+      println("Child Finished")
       connection ! Close
+      consumer ! PoisonPill
       context become waitingForShutdown
     case err@ErrorClosed(msg) =>
       // Connection closed/reset by client
@@ -84,20 +87,33 @@ class ProtocolMonitor(protocol: Protocol, connection: ActorRef, consumer: ActorR
     consumer ! ProtocolEnded(err)
   }
 
+  var clientQuit = false
+
   def waitingForShutdown: Receive = {
     case ToConnection(data) =>
       // Allow Error message to be sent to client
       connection ! Write(ByteString.fromString(data))
     case ChildFinished =>
-      self ! PoisonPill
+      if (clientQuit) {
+        self ! PoisonPill
+      } else {
+        connection ! Close
+      }
+      consumer ! PoisonPill
     case PeerClosed =>
-      self ! PoisonPill
-      println("CLOSED PM")
-    case Closed => // Closed
+      //      self ! PoisonPill
+      println("PeerClosed PM")
+    case Closed =>
+      //      self ! PoisonPill
+      println("Closed PM") // Closed
     case err@_ => println(s"Ignoring received msg: $err")
   }
 
   override def preStart() = {
     self ! Initiation
+  }
+
+  override def postStop() = {
+    println("PM stopping...")
   }
 }

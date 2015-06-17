@@ -28,18 +28,18 @@ class HTTPServer extends Actor {
           println(s"We don't serve: $request")
       }
       sender() ! ChildFinished
-      self ! PoisonPill
+    //      self ! PoisonPill
     case Initiation =>
       println("New connection")
     case ProtocolEnded(reason) =>
       println(reason)
       println("Stopping HTTP Server")
       sender() ! ChildFinished
-      self ! PoisonPill
+    //      self ! PoisonPill
     case err@_ =>
       println(s"HTTP Server error: $err")
       sender() ! ChildFinished
-      self ! PoisonPill
+    //      self ! PoisonPill
   }
 
   def headers: String = {
